@@ -32,7 +32,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
   Activity,
@@ -228,6 +228,61 @@ export default function Admin() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+
+  // ---- Admin access control state ----
+  const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
+  const [adminRegistered, setAdminRegistered] = useState<boolean | null>(null);
+  const [resetAdminDialogOpen, setResetAdminDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || !actor) {
+      setIsAdminUser(null);
+      setAdminRegistered(null);
+      return;
+    }
+    (async () => {
+      try {
+        const [adminCheck, adminPrincipal] = await Promise.all([
+          (actor as any).isAdmin(),
+          (actor as any).getAdminPrincipal(),
+        ]);
+        setAdminRegistered(adminPrincipal.length > 0);
+        setIsAdminUser(!!adminCheck);
+      } catch {
+        setAdminRegistered(false);
+        setIsAdminUser(false);
+      }
+    })();
+  }, [isAuthenticated, actor]);
+
+  const handleRegisterAdmin = async () => {
+    if (!actor) return;
+    try {
+      await (actor as any).registerAdmin();
+      const [adminCheck, adminPrincipal] = await Promise.all([
+        (actor as any).isAdmin(),
+        (actor as any).getAdminPrincipal(),
+      ]);
+      setAdminRegistered(adminPrincipal.length > 0);
+      setIsAdminUser(!!adminCheck);
+      toast.success("Berhasil didaftarkan sebagai admin!");
+    } catch {
+      toast.error("Gagal mendaftarkan admin");
+    }
+  };
+
+  const handleResetAdmin = async () => {
+    if (!actor) return;
+    try {
+      await (actor as any).resetAdmin();
+      setAdminRegistered(false);
+      setIsAdminUser(false);
+      setResetAdminDialogOpen(false);
+      toast.success("Admin berhasil direset. Silakan daftarkan ulang.");
+    } catch {
+      toast.error("Gagal mereset admin");
+    }
+  };
 
   // ---- Articles state ----
   const { data: articles = [], isLoading: articlesLoading } = useAllArticles();
@@ -529,7 +584,7 @@ export default function Admin() {
   const createSliderMutation = useMutation({
     mutationFn: async (data: SliderForm) => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).createSliderBanner(
+      return actor.createSliderBanner(
         data.title,
         data.description,
         data.imageUrl,
@@ -549,7 +604,7 @@ export default function Admin() {
   const updateSliderMutation = useMutation({
     mutationFn: async ({ id, data }: { id: bigint; data: SliderForm }) => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).updateSliderBanner(
+      return actor.updateSliderBanner(
         id,
         data.title,
         data.description,
@@ -571,7 +626,7 @@ export default function Admin() {
   const deleteSliderMutation = useMutation({
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).deleteSliderBanner(id);
+      return actor.deleteSliderBanner(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sliderBanners"] });
@@ -935,1004 +990,687 @@ export default function Admin() {
               </CardContent>
             </Card>
           </div>
-        ) : (
-          <Tabs
-            defaultValue="berita"
-            className="space-y-6"
-            data-ocid="admin.tab"
+        ) : isAdminUser === null ? (
+          <div
+            className="flex items-center justify-center py-32"
+            data-ocid="admin.loading_state"
           >
-            <TabsList className="bg-navy/10 border border-navy/20">
-              <TabsTrigger
-                value="berita"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.berita.tab"
-              >
-                Berita
-              </TabsTrigger>
-              <TabsTrigger
-                value="anggota"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.anggota.tab"
-              >
-                Anggota Tim
-              </TabsTrigger>
-              <TabsTrigger
-                value="kegiatan"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.kegiatan.tab"
-              >
-                Kegiatan
-              </TabsTrigger>
-              <TabsTrigger
-                value="kontak"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.kontak.tab"
-              >
-                Kontak
-              </TabsTrigger>
-              <TabsTrigger
-                value="program-unggulan"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.program_unggulan.tab"
-              >
-                Program Unggulan
-              </TabsTrigger>
-              <TabsTrigger
-                value="video-youtube"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.video.tab"
-              >
-                Video YouTube
-              </TabsTrigger>
-              <TabsTrigger
-                value="profile"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.profile.tab"
-              >
-                Profil
-              </TabsTrigger>
-              <TabsTrigger
-                value="galeri"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.galeri.tab"
-              >
-                Galeri Kegiatan
-              </TabsTrigger>
-              <TabsTrigger
-                value="pendaftaran"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.pendaftaran.tab"
-              >
-                Pendaftaran
-              </TabsTrigger>
-              <TabsTrigger
-                value="satuan"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.satuan.tab"
-              >
-                Satuan SSK
-              </TabsTrigger>
-              <TabsTrigger
-                value="pengaturan-logo"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.logo.tab"
-              >
-                Pengaturan Logo
-              </TabsTrigger>
-              <TabsTrigger
-                value="slider"
-                className="data-[state=active]:bg-navy data-[state=active]:text-white"
-                data-ocid="admin.slider.tab"
-              >
-                Slider Banner
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ---- BERITA TAB ---- */}
-            <TabsContent value="berita" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-navy">
-                    Manajemen Berita
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {articles.length} artikel tersedia
-                  </p>
+            <Loader2 className="w-8 h-8 animate-spin text-navy" />
+            <span className="ml-3 text-navy">Memeriksa akses admin...</span>
+          </div>
+        ) : adminRegistered === false ? (
+          <div className="flex items-center justify-center py-24">
+            <Card className="w-full max-w-sm shadow-lg border-0">
+              <CardHeader className="text-center pb-2">
+                <div className="w-16 h-16 bg-gold rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-navy" />
                 </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingArticle(null);
-                    setArticleForm(emptyArticleForm);
-                    setArticleFormOpen(true);
-                  }}
-                  data-ocid="admin.berita.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Artikel
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {articlesLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.berita.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : articles.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.berita.empty_state"
-                    >
-                      <p className="font-medium">Belum ada artikel</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.berita.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Judul
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Kategori
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Tanggal
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {articles.map((article, i) => (
-                          <TableRow
-                            key={article.id.toString()}
-                            data-ocid={`admin.berita.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <p className="font-medium text-gray-900 line-clamp-1">
-                                {article.title}
-                              </p>
-                              <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
-                                {article.excerpt}
-                              </p>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className="bg-navy/10 text-navy text-xs"
-                              >
-                                {article.category}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(article.date)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingArticle(article);
-                                    setArticleForm({
-                                      title: article.title,
-                                      excerpt: article.excerpt,
-                                      content: article.content,
-                                      category: article.category,
-                                      imageUrl: article.imageUrl,
-                                    });
-                                    setArticleFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.berita.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() =>
-                                    setDeleteArticleTarget(article)
-                                  }
-                                  data-ocid={`admin.berita.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- ANGGOTA TIM TAB ---- */}
-            <TabsContent value="anggota" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-navy">
-                    Manajemen Anggota Tim
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {teamMembers.length} anggota terdaftar
-                  </p>
-                </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingTeam(null);
-                    setTeamForm(emptyTeamForm);
-                    setTeamFormOpen(true);
-                  }}
-                  data-ocid="admin.anggota.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Anggota
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {teamLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.anggota.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : teamMembers.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.anggota.empty_state"
-                    >
-                      <p className="font-medium">Belum ada anggota tim</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.anggota.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Nama
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Jabatan
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Bio
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teamMembers.map((member, i) => (
-                          <TableRow
-                            key={member.id.toString()}
-                            data-ocid={`admin.anggota.item.${i + 1}`}
-                          >
-                            <TableCell className="font-medium">
-                              {member.name}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className="bg-gold/20 text-navy text-xs"
-                              >
-                                {member.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500 max-w-xs">
-                              <p className="line-clamp-2">{member.bio}</p>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingTeam(member);
-                                    setTeamForm({
-                                      name: member.name,
-                                      role: member.role,
-                                      bio: member.bio,
-                                      imageUrl: member.imageUrl,
-                                    });
-                                    setTeamFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.anggota.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() => setDeleteTeamTarget(member)}
-                                  data-ocid={`admin.anggota.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- KEGIATAN TAB ---- */}
-            <TabsContent value="kegiatan" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-navy">
-                    Manajemen Kegiatan
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {activities.length} kegiatan terdaftar
-                  </p>
-                </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingActivity(null);
-                    setActivityForm(emptyActivityForm);
-                    setActivityFormOpen(true);
-                  }}
-                  data-ocid="admin.kegiatan.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {activitiesLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.kegiatan.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : activities.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.kegiatan.empty_state"
-                    >
-                      <p className="font-medium">Belum ada kegiatan</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.kegiatan.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Judul
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Tanggal
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Lokasi
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {activities.map((activity, i) => (
-                          <TableRow
-                            key={activity.id.toString()}
-                            data-ocid={`admin.kegiatan.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <p className="font-medium text-gray-900">
-                                {activity.title}
-                              </p>
-                              <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
-                                {activity.description}
-                              </p>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(activity.date)}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {activity.location}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingActivity(activity);
-                                    setActivityForm({
-                                      title: activity.title,
-                                      description: activity.description,
-                                      date: bigintToDateStr(activity.date),
-                                      location: activity.location,
-                                    });
-                                    setActivityFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.kegiatan.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() =>
-                                    setDeleteActivityTarget(activity)
-                                  }
-                                  data-ocid={`admin.kegiatan.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- KONTAK TAB ---- */}
-            <TabsContent value="kontak" className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-navy">
-                  Informasi Kontak
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Perbarui informasi kontak yang ditampilkan di website
+                <CardTitle className="text-navy text-xl">
+                  Daftarkan Admin
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Belum ada admin terdaftar. Daftarkan akun ini sebagai admin
+                  untuk mulai mengelola konten.
                 </p>
-              </div>
-              <Card className="shadow-sm border-0 max-w-2xl">
-                <CardHeader>
-                  <CardTitle className="text-navy text-lg">
-                    Edit Informasi Kontak
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form
-                    className="space-y-4"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      updateContactMutation.mutate();
-                    }}
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                <Button
+                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold"
+                  onClick={handleRegisterAdmin}
+                  data-ocid="admin.register_button"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Daftarkan sebagai Admin
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-navy/30 text-navy"
+                  onClick={clear}
+                  data-ocid="admin.cancel_button"
+                >
+                  Batal / Keluar
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : isAdminUser === false ? (
+          <div className="flex items-center justify-center py-24">
+            <Card className="w-full max-w-sm shadow-lg border-0">
+              <CardHeader className="text-center pb-2">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-red-600" />
+                </div>
+                <CardTitle className="text-red-600 text-xl">
+                  Akses Ditolak
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Akun ini tidak memiliki akses admin. Panel admin hanya dapat
+                  diakses oleh satu pengguna terdaftar.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Button
+                  className="w-full bg-navy hover:bg-navy/90 text-white"
+                  onClick={clear}
+                  data-ocid="admin.logout_button"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Keluar
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* Reset Admin Dialog */}
+            <Dialog
+              open={resetAdminDialogOpen}
+              onOpenChange={setResetAdminDialogOpen}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reset Admin</DialogTitle>
+                  <DialogDescription>
+                    Ini akan menghapus pendaftaran admin saat ini. Setelah
+                    direset, siapa pun yang login pertama kali dapat
+                    mendaftarkan diri sebagai admin baru. Lanjutkan?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setResetAdminDialogOpen(false)}
+                    data-ocid="admin.cancel_button"
                   >
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="contact-address"
-                        className="text-navy font-medium"
-                      >
-                        Alamat
-                      </Label>
-                      <Textarea
-                        id="contact-address"
-                        value={contactForm.address}
-                        onChange={(e) =>
-                          setContactForm((prev) => ({
-                            ...prev,
-                            address: e.target.value,
-                          }))
-                        }
-                        placeholder="Alamat kantor..."
-                        rows={2}
-                        data-ocid="admin.kontak.address.textarea"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="contact-phone"
-                        className="text-navy font-medium"
-                      >
-                        Telepon
-                      </Label>
-                      <Input
-                        id="contact-phone"
-                        value={contactForm.phone}
-                        onChange={(e) =>
-                          setContactForm((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        placeholder="(0260) 411-xxxx"
-                        data-ocid="admin.kontak.phone.input"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="contact-email"
-                        className="text-navy font-medium"
-                      >
-                        Email
-                      </Label>
-                      <Input
-                        id="contact-email"
-                        type="email"
-                        value={contactForm.email}
-                        onChange={(e) =>
-                          setContactForm((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        placeholder="info@ssk-subang.go.id"
-                        data-ocid="admin.kontak.email.input"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="contact-hours"
-                        className="text-navy font-medium"
-                      >
-                        Jam Operasional
-                      </Label>
-                      <Input
-                        id="contact-hours"
-                        value={contactForm.operationalHours}
-                        onChange={(e) =>
-                          setContactForm((prev) => ({
-                            ...prev,
-                            operationalHours: e.target.value,
-                          }))
-                        }
-                        placeholder="Senin – Jumat, 08.00 – 16.00 WIB"
-                        data-ocid="admin.kontak.hours.input"
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                      disabled={updateContactMutation.isPending}
-                      data-ocid="admin.kontak.save_button"
-                    >
-                      {updateContactMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                          Menyimpan…
-                        </>
-                      ) : (
-                        "Simpan Perubahan"
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- PROGRAM UNGGULAN TAB ---- */}
-            <TabsContent value="program-unggulan" className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-navy">
+                    Batal
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleResetAdmin}
+                    data-ocid="admin.confirm_button"
+                  >
+                    Ya, Reset Admin
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setResetAdminDialogOpen(true)}
+                className="border-red-300 text-red-600 hover:bg-red-50 text-xs"
+                data-ocid="admin.reset_admin_button"
+              >
+                Reset Admin
+              </Button>
+            </div>
+            <Tabs
+              defaultValue="berita"
+              className="space-y-6"
+              data-ocid="admin.tab"
+            >
+              <TabsList className="bg-navy/10 border border-navy/20">
+                <TabsTrigger
+                  value="berita"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.berita.tab"
+                >
+                  Berita
+                </TabsTrigger>
+                <TabsTrigger
+                  value="anggota"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.anggota.tab"
+                >
+                  Anggota Tim
+                </TabsTrigger>
+                <TabsTrigger
+                  value="kegiatan"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.kegiatan.tab"
+                >
+                  Kegiatan
+                </TabsTrigger>
+                <TabsTrigger
+                  value="kontak"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.kontak.tab"
+                >
+                  Kontak
+                </TabsTrigger>
+                <TabsTrigger
+                  value="program-unggulan"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.program_unggulan.tab"
+                >
                   Program Unggulan
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Perbarui data Program Unggulan yang ditampilkan di halaman
-                  utama
-                </p>
-              </div>
-              <Card className="shadow-sm border-0 max-w-2xl">
-                <CardHeader>
-                  <CardTitle className="text-navy text-lg">
-                    Edit Program Unggulan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form
-                    className="space-y-4"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      updateProgramMutation.mutate();
-                    }}
-                  >
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="program-judul"
-                        className="text-navy font-medium"
-                      >
-                        Judul
-                      </Label>
-                      <input
-                        id="program-judul"
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        value={programForm.judul}
-                        onChange={(e) =>
-                          setProgramForm((prev) => ({
-                            ...prev,
-                            judul: e.target.value,
-                          }))
-                        }
-                        placeholder="Program Unggulan SSK Kabupaten Subang"
-                        data-ocid="admin.program_unggulan.judul.input"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="program-deskripsi"
-                        className="text-navy font-medium"
-                      >
-                        Deskripsi
-                      </Label>
-                      <Textarea
-                        id="program-deskripsi"
-                        value={programForm.deskripsi}
-                        onChange={(e) =>
-                          setProgramForm((prev) => ({
-                            ...prev,
-                            deskripsi: e.target.value,
-                          }))
-                        }
-                        placeholder="Deskripsi program unggulan..."
-                        rows={3}
-                        data-ocid="admin.program_unggulan.deskripsi.textarea"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label
-                          htmlFor="program-peserta"
-                          className="text-navy font-medium"
-                        >
-                          Peserta Terlatih
-                        </Label>
-                        <input
-                          id="program-peserta"
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          value={programForm.pesertaTerlatih}
-                          onChange={(e) =>
-                            setProgramForm((prev) => ({
-                              ...prev,
-                              pesertaTerlatih: e.target.value,
-                            }))
-                          }
-                          placeholder="1.000+"
-                          data-ocid="admin.program_unggulan.peserta.input"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label
-                          htmlFor="program-kegiatan"
-                          className="text-navy font-medium"
-                        >
-                          Program Kegiatan
-                        </Label>
-                        <input
-                          id="program-kegiatan"
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          value={programForm.programKegiatan}
-                          onChange={(e) =>
-                            setProgramForm((prev) => ({
-                              ...prev,
-                              programKegiatan: e.target.value,
-                            }))
-                          }
-                          placeholder="15+"
-                          data-ocid="admin.program_unggulan.kegiatan.input"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label
-                          htmlFor="program-penghargaan"
-                          className="text-navy font-medium"
-                        >
-                          Penghargaan
-                        </Label>
-                        <input
-                          id="program-penghargaan"
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          value={programForm.penghargaan}
-                          onChange={(e) =>
-                            setProgramForm((prev) => ({
-                              ...prev,
-                              penghargaan: e.target.value,
-                            }))
-                          }
-                          placeholder="5+"
-                          data-ocid="admin.program_unggulan.penghargaan.input"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label
-                          htmlFor="program-kecamatan"
-                          className="text-navy font-medium"
-                        >
-                          Kecamatan Terlayani
-                        </Label>
-                        <input
-                          id="program-kecamatan"
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          value={programForm.kecamatanTerlayani}
-                          onChange={(e) =>
-                            setProgramForm((prev) => ({
-                              ...prev,
-                              kecamatanTerlayani: e.target.value,
-                            }))
-                          }
-                          placeholder="30+"
-                          data-ocid="admin.program_unggulan.kecamatan.input"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="submit"
-                      className="bg-navy hover:bg-navy-light text-white w-full mt-2"
-                      disabled={updateProgramMutation.isPending}
-                      data-ocid="admin.program_unggulan.save_button"
-                    >
-                      {updateProgramMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Menyimpan...
-                        </>
-                      ) : (
-                        "Simpan Perubahan"
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="video-youtube"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.video.tab"
+                >
+                  Video YouTube
+                </TabsTrigger>
+                <TabsTrigger
+                  value="profile"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.profile.tab"
+                >
+                  Profil
+                </TabsTrigger>
+                <TabsTrigger
+                  value="galeri"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.galeri.tab"
+                >
+                  Galeri Kegiatan
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pendaftaran"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.pendaftaran.tab"
+                >
+                  Pendaftaran
+                </TabsTrigger>
+                <TabsTrigger
+                  value="satuan"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.satuan.tab"
+                >
+                  Satuan SSK
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pengaturan-logo"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.logo.tab"
+                >
+                  Pengaturan Logo
+                </TabsTrigger>
+                <TabsTrigger
+                  value="slider"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.slider.tab"
+                >
+                  Slider Banner
+                </TabsTrigger>
+              </TabsList>
 
-            {/* ---- VIDEO YOUTUBE TAB ---- */}
-            <TabsContent value="video-youtube" className="space-y-6">
-              <div className="flex items-center justify-between">
+              {/* ---- BERITA TAB ---- */}
+              <TabsContent value="berita" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Manajemen Berita
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {articles.length} artikel tersedia
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingArticle(null);
+                      setArticleForm(emptyArticleForm);
+                      setArticleFormOpen(true);
+                    }}
+                    data-ocid="admin.berita.primary_button"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Artikel
+                  </Button>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {articlesLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.berita.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : articles.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.berita.empty_state"
+                      >
+                        <p className="font-medium">Belum ada artikel</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.berita.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Judul
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Kategori
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Tanggal
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {articles.map((article, i) => (
+                            <TableRow
+                              key={article.id.toString()}
+                              data-ocid={`admin.berita.item.${i + 1}`}
+                            >
+                              <TableCell>
+                                <p className="font-medium text-gray-900 line-clamp-1">
+                                  {article.title}
+                                </p>
+                                <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
+                                  {article.excerpt}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-navy/10 text-navy text-xs"
+                                >
+                                  {article.category}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {formatDate(article.date)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
+                                    onClick={() => {
+                                      setEditingArticle(article);
+                                      setArticleForm({
+                                        title: article.title,
+                                        excerpt: article.excerpt,
+                                        content: article.content,
+                                        category: article.category,
+                                        imageUrl: article.imageUrl,
+                                      });
+                                      setArticleFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.berita.edit_button.${i + 1}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() =>
+                                      setDeleteArticleTarget(article)
+                                    }
+                                    data-ocid={`admin.berita.delete_button.${i + 1}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- ANGGOTA TIM TAB ---- */}
+              <TabsContent value="anggota" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Manajemen Anggota Tim
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {teamMembers.length} anggota terdaftar
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingTeam(null);
+                      setTeamForm(emptyTeamForm);
+                      setTeamFormOpen(true);
+                    }}
+                    data-ocid="admin.anggota.primary_button"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Anggota
+                  </Button>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {teamLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.anggota.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : teamMembers.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.anggota.empty_state"
+                      >
+                        <p className="font-medium">Belum ada anggota tim</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.anggota.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Nama
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Jabatan
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Bio
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {teamMembers.map((member, i) => (
+                            <TableRow
+                              key={member.id.toString()}
+                              data-ocid={`admin.anggota.item.${i + 1}`}
+                            >
+                              <TableCell className="font-medium">
+                                {member.name}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-gold/20 text-navy text-xs"
+                                >
+                                  {member.role}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500 max-w-xs">
+                                <p className="line-clamp-2">{member.bio}</p>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
+                                    onClick={() => {
+                                      setEditingTeam(member);
+                                      setTeamForm({
+                                        name: member.name,
+                                        role: member.role,
+                                        bio: member.bio,
+                                        imageUrl: member.imageUrl,
+                                      });
+                                      setTeamFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.anggota.edit_button.${i + 1}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() => setDeleteTeamTarget(member)}
+                                    data-ocid={`admin.anggota.delete_button.${i + 1}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- KEGIATAN TAB ---- */}
+              <TabsContent value="kegiatan" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Manajemen Kegiatan
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {activities.length} kegiatan terdaftar
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingActivity(null);
+                      setActivityForm(emptyActivityForm);
+                      setActivityFormOpen(true);
+                    }}
+                    data-ocid="admin.kegiatan.primary_button"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
+                  </Button>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {activitiesLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.kegiatan.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : activities.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.kegiatan.empty_state"
+                      >
+                        <p className="font-medium">Belum ada kegiatan</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.kegiatan.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Judul
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Tanggal
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Lokasi
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {activities.map((activity, i) => (
+                            <TableRow
+                              key={activity.id.toString()}
+                              data-ocid={`admin.kegiatan.item.${i + 1}`}
+                            >
+                              <TableCell>
+                                <p className="font-medium text-gray-900">
+                                  {activity.title}
+                                </p>
+                                <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
+                                  {activity.description}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {formatDate(activity.date)}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                {activity.location}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
+                                    onClick={() => {
+                                      setEditingActivity(activity);
+                                      setActivityForm({
+                                        title: activity.title,
+                                        description: activity.description,
+                                        date: bigintToDateStr(activity.date),
+                                        location: activity.location,
+                                      });
+                                      setActivityFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.kegiatan.edit_button.${i + 1}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() =>
+                                      setDeleteActivityTarget(activity)
+                                    }
+                                    data-ocid={`admin.kegiatan.delete_button.${i + 1}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- KONTAK TAB ---- */}
+              <TabsContent value="kontak" className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-navy">
-                    Video YouTube
+                    Informasi Kontak
                   </h2>
                   <p className="text-gray-500 text-sm mt-1">
-                    {videos.length} video terdaftar
+                    Perbarui informasi kontak yang ditampilkan di website
                   </p>
                 </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingVideo(null);
-                    setVideoForm(emptyVideoForm);
-                    setVideoFormOpen(true);
-                  }}
-                  data-ocid="admin.video.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Video
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {videosLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.video.loading_state"
+                <Card className="shadow-sm border-0 max-w-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-navy text-lg">
+                      Edit Informasi Kontak
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form
+                      className="space-y-4"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        updateContactMutation.mutate();
+                      }}
                     >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : videos.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.video.empty_state"
-                    >
-                      <p className="font-medium">Belum ada video</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.video.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Judul
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            YouTube ID
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Deskripsi
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {videos.map((video, i) => (
-                          <TableRow
-                            key={video.id.toString()}
-                            data-ocid={`admin.video.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <p className="font-medium text-gray-900">
-                                {video.title}
-                              </p>
-                            </TableCell>
-                            <TableCell className="text-sm text-blue-600">
-                              <a
-                                href={`https://youtube.com/watch?v=${video.youtubeId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                {video.youtubeId}
-                              </a>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600 max-w-xs line-clamp-2">
-                              {video.description}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingVideo(video);
-                                    setVideoForm({
-                                      title: video.title,
-                                      youtubeId: video.youtubeId,
-                                      description: video.description,
-                                    });
-                                    setVideoFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.video.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() => setDeleteVideoTarget(video)}
-                                  data-ocid={`admin.video.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- PROFILE TAB ---- */}
-            <TabsContent value="profile" className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-navy">
-                  Profil Organisasi
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Edit informasi profil organisasi SSK Kabupaten Subang
-                </p>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardHeader className="border-b">
-                  <CardTitle className="text-navy text-lg">
-                    Informasi Profil
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      updateProfileMutation.mutate();
-                    }}
-                    className="space-y-5"
-                  >
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="namaOrganisasi"
-                        className="text-navy font-medium"
-                      >
-                        Nama Organisasi
-                      </Label>
-                      <Input
-                        id="namaOrganisasi"
-                        value={profileForm.namaOrganisasi}
-                        onChange={(e) =>
-                          setProfileForm((p) => ({
-                            ...p,
-                            namaOrganisasi: e.target.value,
-                          }))
-                        }
-                        placeholder="Nama organisasi"
-                        data-ocid="admin.profile.input"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="tagline"
-                        className="text-navy font-medium"
-                      >
-                        Tagline / Slogan
-                      </Label>
-                      <Input
-                        id="tagline"
-                        value={profileForm.tagline}
-                        onChange={(e) =>
-                          setProfileForm((p) => ({
-                            ...p,
-                            tagline: e.target.value,
-                          }))
-                        }
-                        placeholder="Tagline atau slogan organisasi"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="deskripsi"
-                        className="text-navy font-medium"
-                      >
-                        Deskripsi Singkat
-                      </Label>
-                      <Input
-                        id="deskripsi"
-                        value={profileForm.deskripsi}
-                        onChange={(e) =>
-                          setProfileForm((p) => ({
-                            ...p,
-                            deskripsi: e.target.value,
-                          }))
-                        }
-                        placeholder="Deskripsi singkat organisasi"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="visi" className="text-navy font-medium">
-                        Visi
-                      </Label>
-                      <Textarea
-                        id="visi"
-                        rows={3}
-                        value={profileForm.visi}
-                        onChange={(e) =>
-                          setProfileForm((p) => ({
-                            ...p,
-                            visi: e.target.value,
-                          }))
-                        }
-                        placeholder="Visi organisasi"
-                        data-ocid="admin.profile.textarea"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="misi" className="text-navy font-medium">
-                        Misi
-                      </Label>
-                      <Textarea
-                        id="misi"
-                        rows={3}
-                        value={profileForm.misi}
-                        onChange={(e) =>
-                          setProfileForm((p) => ({
-                            ...p,
-                            misi: e.target.value,
-                          }))
-                        }
-                        placeholder="Misi organisasi"
-                      />
-                    </div>
-                    <div className="flex justify-end pt-2">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="contact-address"
+                          className="text-navy font-medium"
+                        >
+                          Alamat
+                        </Label>
+                        <Textarea
+                          id="contact-address"
+                          value={contactForm.address}
+                          onChange={(e) =>
+                            setContactForm((prev) => ({
+                              ...prev,
+                              address: e.target.value,
+                            }))
+                          }
+                          placeholder="Alamat kantor..."
+                          rows={2}
+                          data-ocid="admin.kontak.address.textarea"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="contact-phone"
+                          className="text-navy font-medium"
+                        >
+                          Telepon
+                        </Label>
+                        <Input
+                          id="contact-phone"
+                          value={contactForm.phone}
+                          onChange={(e) =>
+                            setContactForm((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
+                          placeholder="(0260) 411-xxxx"
+                          data-ocid="admin.kontak.phone.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="contact-email"
+                          className="text-navy font-medium"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="contact-email"
+                          type="email"
+                          value={contactForm.email}
+                          onChange={(e) =>
+                            setContactForm((prev) => ({
+                              ...prev,
+                              email: e.target.value,
+                            }))
+                          }
+                          placeholder="info@ssk-subang.go.id"
+                          data-ocid="admin.kontak.email.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="contact-hours"
+                          className="text-navy font-medium"
+                        >
+                          Jam Operasional
+                        </Label>
+                        <Input
+                          id="contact-hours"
+                          value={contactForm.operationalHours}
+                          onChange={(e) =>
+                            setContactForm((prev) => ({
+                              ...prev,
+                              operationalHours: e.target.value,
+                            }))
+                          }
+                          placeholder="Senin – Jumat, 08.00 – 16.00 WIB"
+                          data-ocid="admin.kontak.hours.input"
+                        />
+                      </div>
                       <Button
                         type="submit"
                         className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                        disabled={updateProfileMutation.isPending}
-                        data-ocid="admin.profile.submit_button"
+                        disabled={updateContactMutation.isPending}
+                        data-ocid="admin.kontak.save_button"
                       >
-                        {updateProfileMutation.isPending ? (
+                        {updateContactMutation.isPending ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
                             Menyimpan…
@@ -1941,594 +1679,1038 @@ export default function Admin() {
                           "Simpan Perubahan"
                         )}
                       </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* ---- GALERI TAB ---- */}
-            <TabsContent value="galeri" className="space-y-6">
-              <div className="flex items-center justify-between">
+              {/* ---- PROGRAM UNGGULAN TAB ---- */}
+              <TabsContent value="program-unggulan" className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-navy">
-                    Galeri Kegiatan
+                    Program Unggulan
                   </h2>
                   <p className="text-gray-500 text-sm mt-1">
-                    {galeriItems.length} item tersedia
+                    Perbarui data Program Unggulan yang ditampilkan di halaman
+                    utama
                   </p>
                 </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingGaleri(null);
-                    setGaleriForm(emptyGaleriForm);
-                    setGaleriFormOpen(true);
-                  }}
-                  data-ocid="admin.galeri.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Item
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {galeriLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.galeri.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : galeriItems.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.galeri.empty_state"
-                    >
-                      <p className="font-medium">Belum ada item galeri</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.galeri.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Judul
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Tipe
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Tanggal
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {galeriItems.map((item, i) => (
-                          <TableRow
-                            key={item.id.toString()}
-                            data-ocid={`admin.galeri.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <p className="font-medium text-gray-900 line-clamp-1">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
-                                {item.description}
-                              </p>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className="bg-navy/10 text-navy text-xs"
-                              >
-                                {item.mediaType}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(item.tanggal)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingGaleri(item);
-                                    setGaleriForm({
-                                      title: item.title,
-                                      description: item.description,
-                                      mediaType: item.mediaType,
-                                      mediaUrl: item.mediaUrl,
-                                    });
-                                    setGaleriFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.galeri.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() => setDeleteGaleriTarget(item)}
-                                  data-ocid={`admin.galeri.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- PENDAFTARAN TAB ---- */}
-            <TabsContent value="pendaftaran" className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-navy">
-                  Pendaftaran Anggota
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  {pendaftaranList.length} pendaftar
-                </p>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {pendaftaranLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.pendaftaran.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : pendaftaranList.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.pendaftaran.empty_state"
-                    >
-                      <p className="font-medium">Belum ada pendaftaran</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.pendaftaran.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Nama
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            NIK
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Email / HP
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Pekerjaan
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Tanggal
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Status
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendaftaranList.map((p, i) => (
-                          <TableRow
-                            key={p.id.toString()}
-                            data-ocid={`admin.pendaftaran.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <p className="font-medium text-gray-900">
-                                {p.nama}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {p.alamat}
-                              </p>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {p.nik}
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm text-gray-700">{p.email}</p>
-                              <p className="text-xs text-gray-400">{p.phone}</p>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {p.pekerjaan}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(p.tanggalDaftar)}
-                            </TableCell>
-                            <TableCell>
-                              <select
-                                value={p.status}
-                                onChange={(e) =>
-                                  updatePendaftaranMutation.mutate({
-                                    id: p.id,
-                                    status: e.target.value,
-                                  })
-                                }
-                                className={`text-xs font-semibold px-2 py-1 rounded border-0 outline-none cursor-pointer ${
-                                  p.status === "Diterima"
-                                    ? "bg-green-100 text-green-700"
-                                    : p.status === "Ditolak"
-                                      ? "bg-red-100 text-red-700"
-                                      : "bg-yellow-100 text-yellow-700"
-                                }`}
-                                data-ocid={`admin.pendaftaran.select.${i + 1}`}
-                              >
-                                <option value="Menunggu">Menunggu</option>
-                                <option value="Diterima">Diterima</option>
-                                <option value="Ditolak">Ditolak</option>
-                              </select>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:bg-red-50"
-                                onClick={() => setDeletePendaftaranTarget(p)}
-                                data-ocid={`admin.pendaftaran.delete_button.${i + 1}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- SATUAN SSK TAB ---- */}
-            <TabsContent value="satuan" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-navy">Satuan SSK</h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {satuanList.length} satuan terdaftar
-                  </p>
-                </div>
-                <Button
-                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
-                  onClick={() => {
-                    setEditingSatuan(null);
-                    setSatuanForm(emptySatuanForm);
-                    setSatuanFormOpen(true);
-                  }}
-                  data-ocid="admin.satuan.primary_button"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Satuan
-                </Button>
-              </div>
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {satuanLoading ? (
-                    <div
-                      className="flex items-center justify-center py-20"
-                      data-ocid="admin.satuan.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
-                    </div>
-                  ) : satuanList.length === 0 ? (
-                    <div
-                      className="text-center py-20 text-gray-400"
-                      data-ocid="admin.satuan.empty_state"
-                    >
-                      <p className="font-medium">Belum ada satuan terdaftar</p>
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.satuan.table">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="font-semibold text-navy">
-                            Nama Satuan
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Ketua
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy">
-                            Kontak
-                          </TableHead>
-                          <TableHead className="font-semibold text-navy text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {satuanList.map((s, i) => (
-                          <TableRow
-                            key={s.id.toString()}
-                            data-ocid={`admin.satuan.item.${i + 1}`}
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                {s.logoUrl && (
-                                  <img
-                                    src={s.logoUrl}
-                                    alt={s.nama}
-                                    className="w-8 h-8 rounded-full object-contain border"
-                                  />
-                                )}
-                                <div>
-                                  <p className="font-medium text-gray-900">
-                                    {s.nama}
-                                  </p>
-                                  <p className="text-xs text-gray-400 line-clamp-1">
-                                    {s.deskripsi}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-700">
-                              {s.ketua}
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm text-gray-700">{s.phone}</p>
-                              <p className="text-xs text-gray-400">{s.email}</p>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-navy hover:bg-navy/10"
-                                  onClick={() => {
-                                    setEditingSatuan(s);
-                                    setSatuanForm({
-                                      nama: s.nama,
-                                      ketua: s.ketua,
-                                      alamat: s.alamat,
-                                      phone: s.phone,
-                                      email: s.email,
-                                      deskripsi: s.deskripsi,
-                                      logoUrl: s.logoUrl,
-                                    });
-                                    setSatuanFormOpen(true);
-                                  }}
-                                  data-ocid={`admin.satuan.edit_button.${i + 1}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:bg-red-50"
-                                  onClick={() => setDeleteSatuanTarget(s)}
-                                  data-ocid={`admin.satuan.delete_button.${i + 1}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ---- PENGATURAN LOGO TAB ---- */}
-            <TabsContent value="pengaturan-logo" className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-navy">
-                  Pengaturan Logo
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Ubah logo yang tampil di header dan footer website
-                </p>
-              </div>
-              <Card className="shadow-sm border-0 max-w-lg">
-                <CardHeader>
-                  <CardTitle className="text-navy text-lg">
-                    Logo Website
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {logoUrl && (
-                    <div className="flex items-center justify-center p-4 bg-navy/5 rounded-lg">
-                      <img
-                        src={logoUrl}
-                        alt="Logo preview"
-                        className="max-h-24 max-w-full object-contain"
-                      />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label className="text-navy font-semibold">
-                      Upload Logo dari Galeri
-                    </Label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
-                      data-ocid="admin.logo.upload_button"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const base64 = await compressImageToBase64(file);
-                          setLogoUrl(base64);
-                        }
+                <Card className="shadow-sm border-0 max-w-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-navy text-lg">
+                      Edit Program Unggulan
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form
+                      className="space-y-4"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        updateProgramMutation.mutate();
                       }}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-navy font-semibold">
-                      Atau Masukkan URL Logo
-                    </Label>
-                    <Input
-                      value={logoUrl}
-                      onChange={(e) => setLogoUrl(e.target.value)}
-                      placeholder="https://example.com/logo.png"
-                      className="border-gray-300"
-                      data-ocid="admin.logo.input"
-                    />
+                    >
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-judul"
+                          className="text-navy font-medium"
+                        >
+                          Judul
+                        </Label>
+                        <input
+                          id="program-judul"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={programForm.judul}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              judul: e.target.value,
+                            }))
+                          }
+                          placeholder="Program Unggulan SSK Kabupaten Subang"
+                          data-ocid="admin.program_unggulan.judul.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-deskripsi"
+                          className="text-navy font-medium"
+                        >
+                          Deskripsi
+                        </Label>
+                        <Textarea
+                          id="program-deskripsi"
+                          value={programForm.deskripsi}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              deskripsi: e.target.value,
+                            }))
+                          }
+                          placeholder="Deskripsi program unggulan..."
+                          rows={3}
+                          data-ocid="admin.program_unggulan.deskripsi.textarea"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor="program-peserta"
+                            className="text-navy font-medium"
+                          >
+                            Peserta Terlatih
+                          </Label>
+                          <input
+                            id="program-peserta"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={programForm.pesertaTerlatih}
+                            onChange={(e) =>
+                              setProgramForm((prev) => ({
+                                ...prev,
+                                pesertaTerlatih: e.target.value,
+                              }))
+                            }
+                            placeholder="1.000+"
+                            data-ocid="admin.program_unggulan.peserta.input"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor="program-kegiatan"
+                            className="text-navy font-medium"
+                          >
+                            Program Kegiatan
+                          </Label>
+                          <input
+                            id="program-kegiatan"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={programForm.programKegiatan}
+                            onChange={(e) =>
+                              setProgramForm((prev) => ({
+                                ...prev,
+                                programKegiatan: e.target.value,
+                              }))
+                            }
+                            placeholder="15+"
+                            data-ocid="admin.program_unggulan.kegiatan.input"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor="program-penghargaan"
+                            className="text-navy font-medium"
+                          >
+                            Penghargaan
+                          </Label>
+                          <input
+                            id="program-penghargaan"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={programForm.penghargaan}
+                            onChange={(e) =>
+                              setProgramForm((prev) => ({
+                                ...prev,
+                                penghargaan: e.target.value,
+                              }))
+                            }
+                            placeholder="5+"
+                            data-ocid="admin.program_unggulan.penghargaan.input"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor="program-kecamatan"
+                            className="text-navy font-medium"
+                          >
+                            Kecamatan Terlayani
+                          </Label>
+                          <input
+                            id="program-kecamatan"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={programForm.kecamatanTerlayani}
+                            onChange={(e) =>
+                              setProgramForm((prev) => ({
+                                ...prev,
+                                kecamatanTerlayani: e.target.value,
+                              }))
+                            }
+                            placeholder="30+"
+                            data-ocid="admin.program_unggulan.kecamatan.input"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="submit"
+                        className="bg-navy hover:bg-navy-light text-white w-full mt-2"
+                        disabled={updateProgramMutation.isPending}
+                        data-ocid="admin.program_unggulan.save_button"
+                      >
+                        {updateProgramMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Menyimpan...
+                          </>
+                        ) : (
+                          "Simpan Perubahan"
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- VIDEO YOUTUBE TAB ---- */}
+              <TabsContent value="video-youtube" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Video YouTube
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {videos.length} video terdaftar
+                    </p>
                   </div>
                   <Button
-                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold"
-                    onClick={() => updateSiteSettingsMutation.mutate(logoUrl)}
-                    disabled={updateSiteSettingsMutation.isPending}
-                    data-ocid="admin.logo.save_button"
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingVideo(null);
+                      setVideoForm(emptyVideoForm);
+                      setVideoFormOpen(true);
+                    }}
+                    data-ocid="admin.video.primary_button"
                   >
-                    {updateSiteSettingsMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        Menyimpan...
-                      </>
-                    ) : (
-                      "Simpan Logo"
-                    )}
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Video
                   </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Slider Banner Tab */}
-            <TabsContent value="slider" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-navy">
-                    Manajemen Slider Banner
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {sliderBanners.length} slide tersedia
-                  </p>
                 </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 bg-gold text-navy px-4 py-2 rounded-lg font-semibold hover:bg-gold/90 transition-colors"
-                  onClick={() => {
-                    setEditingSlider(null);
-                    setSliderForm(emptySliderForm);
-                    setSliderFormOpen(true);
-                  }}
-                  data-ocid="admin.slider.open_modal_button"
-                >
-                  <Plus className="w-4 h-4" /> Tambah Slide
-                </button>
-              </div>
-
-              <Card className="shadow-sm border-0">
-                <CardContent className="p-0">
-                  {sliderLoading ? (
-                    <div
-                      className="flex items-center justify-center py-12"
-                      data-ocid="admin.slider.loading_state"
-                    >
-                      <Loader2 className="w-8 h-8 animate-spin text-navy" />
-                    </div>
-                  ) : sliderBanners.length === 0 ? (
-                    <div
-                      className="text-center py-12 text-gray-400"
-                      data-ocid="admin.slider.empty_state"
-                    >
-                      <p>Belum ada slide. Tambah slide pertama Anda.</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-navy font-bold">
-                            Urutan
-                          </TableHead>
-                          <TableHead className="text-navy font-bold">
-                            Judul
-                          </TableHead>
-                          <TableHead className="text-navy font-bold">
-                            Gambar
-                          </TableHead>
-                          <TableHead className="text-navy font-bold">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[...sliderBanners]
-                          .sort((a, b) => Number(a.urutan) - Number(b.urutan))
-                          .map((slide, index) => (
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {videosLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.video.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : videos.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.video.empty_state"
+                      >
+                        <p className="font-medium">Belum ada video</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.video.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Judul
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              YouTube ID
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Deskripsi
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {videos.map((video, i) => (
                             <TableRow
-                              key={slide.id.toString()}
-                              data-ocid={`admin.slider.row.${index + 1}`}
+                              key={video.id.toString()}
+                              data-ocid={`admin.video.item.${i + 1}`}
                             >
-                              <TableCell className="font-bold text-navy">
-                                {Number(slide.urutan)}
-                              </TableCell>
                               <TableCell>
-                                <p className="font-semibold text-navy">
-                                  {slide.title}
+                                <p className="font-medium text-gray-900">
+                                  {video.title}
                                 </p>
-                                {slide.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                    {slide.description}
-                                  </p>
-                                )}
                               </TableCell>
-                              <TableCell>
-                                {slide.imageUrl ? (
-                                  <img
-                                    src={slide.imageUrl}
-                                    alt={slide.title}
-                                    className="w-16 h-10 object-cover rounded"
-                                  />
-                                ) : (
-                                  <span className="text-gray-400 text-xs">
-                                    No image
-                                  </span>
-                                )}
+                              <TableCell className="text-sm text-blue-600">
+                                <a
+                                  href={`https://youtube.com/watch?v=${video.youtubeId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline"
+                                >
+                                  {video.youtubeId}
+                                </a>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    className="p-1.5 bg-navy/10 hover:bg-navy/20 rounded text-navy transition-colors"
+                              <TableCell className="text-sm text-gray-600 max-w-xs line-clamp-2">
+                                {video.description}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
                                     onClick={() => {
-                                      setEditingSlider(slide);
-                                      setSliderForm({
-                                        title: slide.title,
-                                        description: slide.description,
-                                        imageUrl: slide.imageUrl,
-                                        linkUrl: slide.linkUrl,
-                                        urutan: Number(slide.urutan),
+                                      setEditingVideo(video);
+                                      setVideoForm({
+                                        title: video.title,
+                                        youtubeId: video.youtubeId,
+                                        description: video.description,
                                       });
-                                      setSliderFormOpen(true);
+                                      setVideoFormOpen(true);
                                     }}
-                                    data-ocid={`admin.slider.edit_button.${index + 1}`}
+                                    data-ocid={`admin.video.edit_button.${i + 1}`}
                                   >
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-500 transition-colors"
-                                    onClick={() => setDeleteSliderTarget(slide)}
-                                    data-ocid={`admin.slider.delete_button.${index + 1}`}
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() => setDeleteVideoTarget(video)}
+                                    data-ocid={`admin.video.delete_button.${i + 1}`}
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
                           ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- PROFILE TAB ---- */}
+              <TabsContent value="profile" className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Profil Organisasi
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Edit informasi profil organisasi SSK Kabupaten Subang
+                  </p>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardHeader className="border-b">
+                    <CardTitle className="text-navy text-lg">
+                      Informasi Profil
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        updateProfileMutation.mutate();
+                      }}
+                      className="space-y-5"
+                    >
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="namaOrganisasi"
+                          className="text-navy font-medium"
+                        >
+                          Nama Organisasi
+                        </Label>
+                        <Input
+                          id="namaOrganisasi"
+                          value={profileForm.namaOrganisasi}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              namaOrganisasi: e.target.value,
+                            }))
+                          }
+                          placeholder="Nama organisasi"
+                          data-ocid="admin.profile.input"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="tagline"
+                          className="text-navy font-medium"
+                        >
+                          Tagline / Slogan
+                        </Label>
+                        <Input
+                          id="tagline"
+                          value={profileForm.tagline}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              tagline: e.target.value,
+                            }))
+                          }
+                          placeholder="Tagline atau slogan organisasi"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="deskripsi"
+                          className="text-navy font-medium"
+                        >
+                          Deskripsi Singkat
+                        </Label>
+                        <Input
+                          id="deskripsi"
+                          value={profileForm.deskripsi}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              deskripsi: e.target.value,
+                            }))
+                          }
+                          placeholder="Deskripsi singkat organisasi"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="visi" className="text-navy font-medium">
+                          Visi
+                        </Label>
+                        <Textarea
+                          id="visi"
+                          rows={3}
+                          value={profileForm.visi}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              visi: e.target.value,
+                            }))
+                          }
+                          placeholder="Visi organisasi"
+                          data-ocid="admin.profile.textarea"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="misi" className="text-navy font-medium">
+                          Misi
+                        </Label>
+                        <Textarea
+                          id="misi"
+                          rows={3}
+                          value={profileForm.misi}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              misi: e.target.value,
+                            }))
+                          }
+                          placeholder="Misi organisasi"
+                        />
+                      </div>
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="submit"
+                          className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                          disabled={updateProfileMutation.isPending}
+                          data-ocid="admin.profile.submit_button"
+                        >
+                          {updateProfileMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                              Menyimpan…
+                            </>
+                          ) : (
+                            "Simpan Perubahan"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- GALERI TAB ---- */}
+              <TabsContent value="galeri" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Galeri Kegiatan
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {galeriItems.length} item tersedia
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingGaleri(null);
+                      setGaleriForm(emptyGaleriForm);
+                      setGaleriFormOpen(true);
+                    }}
+                    data-ocid="admin.galeri.primary_button"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Item
+                  </Button>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {galeriLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.galeri.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : galeriItems.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.galeri.empty_state"
+                      >
+                        <p className="font-medium">Belum ada item galeri</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.galeri.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Judul
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Tipe
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Tanggal
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {galeriItems.map((item, i) => (
+                            <TableRow
+                              key={item.id.toString()}
+                              data-ocid={`admin.galeri.item.${i + 1}`}
+                            >
+                              <TableCell>
+                                <p className="font-medium text-gray-900 line-clamp-1">
+                                  {item.title}
+                                </p>
+                                <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
+                                  {item.description}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-navy/10 text-navy text-xs"
+                                >
+                                  {item.mediaType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {formatDate(item.tanggal)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
+                                    onClick={() => {
+                                      setEditingGaleri(item);
+                                      setGaleriForm({
+                                        title: item.title,
+                                        description: item.description,
+                                        mediaType: item.mediaType,
+                                        mediaUrl: item.mediaUrl,
+                                      });
+                                      setGaleriFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.galeri.edit_button.${i + 1}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() => setDeleteGaleriTarget(item)}
+                                    data-ocid={`admin.galeri.delete_button.${i + 1}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- PENDAFTARAN TAB ---- */}
+              <TabsContent value="pendaftaran" className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Pendaftaran Anggota
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {pendaftaranList.length} pendaftar
+                  </p>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {pendaftaranLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.pendaftaran.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : pendaftaranList.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.pendaftaran.empty_state"
+                      >
+                        <p className="font-medium">Belum ada pendaftaran</p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.pendaftaran.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Nama
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              NIK
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Email / HP
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Pekerjaan
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Tanggal
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Status
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendaftaranList.map((p, i) => (
+                            <TableRow
+                              key={p.id.toString()}
+                              data-ocid={`admin.pendaftaran.item.${i + 1}`}
+                            >
+                              <TableCell>
+                                <p className="font-medium text-gray-900">
+                                  {p.nama}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {p.alamat}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {p.nik}
+                              </TableCell>
+                              <TableCell>
+                                <p className="text-sm text-gray-700">
+                                  {p.email}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {p.phone}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {p.pekerjaan}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {formatDate(p.tanggalDaftar)}
+                              </TableCell>
+                              <TableCell>
+                                <select
+                                  value={p.status}
+                                  onChange={(e) =>
+                                    updatePendaftaranMutation.mutate({
+                                      id: p.id,
+                                      status: e.target.value,
+                                    })
+                                  }
+                                  className={`text-xs font-semibold px-2 py-1 rounded border-0 outline-none cursor-pointer ${
+                                    p.status === "Diterima"
+                                      ? "bg-green-100 text-green-700"
+                                      : p.status === "Ditolak"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                  }`}
+                                  data-ocid={`admin.pendaftaran.select.${i + 1}`}
+                                >
+                                  <option value="Menunggu">Menunggu</option>
+                                  <option value="Diterima">Diterima</option>
+                                  <option value="Ditolak">Ditolak</option>
+                                </select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:bg-red-50"
+                                  onClick={() => setDeletePendaftaranTarget(p)}
+                                  data-ocid={`admin.pendaftaran.delete_button.${i + 1}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- SATUAN SSK TAB ---- */}
+              <TabsContent value="satuan" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">Satuan SSK</h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {satuanList.length} satuan terdaftar
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => {
+                      setEditingSatuan(null);
+                      setSatuanForm(emptySatuanForm);
+                      setSatuanFormOpen(true);
+                    }}
+                    data-ocid="admin.satuan.primary_button"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Satuan
+                  </Button>
+                </div>
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {satuanLoading ? (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        data-ocid="admin.satuan.loading_state"
+                      >
+                        <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                      </div>
+                    ) : satuanList.length === 0 ? (
+                      <div
+                        className="text-center py-20 text-gray-400"
+                        data-ocid="admin.satuan.empty_state"
+                      >
+                        <p className="font-medium">
+                          Belum ada satuan terdaftar
+                        </p>
+                      </div>
+                    ) : (
+                      <Table data-ocid="admin.satuan.table">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-navy">
+                              Nama Satuan
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Ketua
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy">
+                              Kontak
+                            </TableHead>
+                            <TableHead className="font-semibold text-navy text-right">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {satuanList.map((s, i) => (
+                            <TableRow
+                              key={s.id.toString()}
+                              data-ocid={`admin.satuan.item.${i + 1}`}
+                            >
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  {s.logoUrl && (
+                                    <img
+                                      src={s.logoUrl}
+                                      alt={s.nama}
+                                      className="w-8 h-8 rounded-full object-contain border"
+                                    />
+                                  )}
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      {s.nama}
+                                    </p>
+                                    <p className="text-xs text-gray-400 line-clamp-1">
+                                      {s.deskripsi}
+                                    </p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-700">
+                                {s.ketua}
+                              </TableCell>
+                              <TableCell>
+                                <p className="text-sm text-gray-700">
+                                  {s.phone}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {s.email}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-navy hover:bg-navy/10"
+                                    onClick={() => {
+                                      setEditingSatuan(s);
+                                      setSatuanForm({
+                                        nama: s.nama,
+                                        ketua: s.ketua,
+                                        alamat: s.alamat,
+                                        phone: s.phone,
+                                        email: s.email,
+                                        deskripsi: s.deskripsi,
+                                        logoUrl: s.logoUrl,
+                                      });
+                                      setSatuanFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.satuan.edit_button.${i + 1}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:bg-red-50"
+                                    onClick={() => setDeleteSatuanTarget(s)}
+                                    data-ocid={`admin.satuan.delete_button.${i + 1}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- PENGATURAN LOGO TAB ---- */}
+              <TabsContent value="pengaturan-logo" className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Pengaturan Logo
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Ubah logo yang tampil di header dan footer website
+                  </p>
+                </div>
+                <Card className="shadow-sm border-0 max-w-lg">
+                  <CardHeader>
+                    <CardTitle className="text-navy text-lg">
+                      Logo Website
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {logoUrl && (
+                      <div className="flex items-center justify-center p-4 bg-navy/5 rounded-lg">
+                        <img
+                          src={logoUrl}
+                          alt="Logo preview"
+                          className="max-h-24 max-w-full object-contain"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label className="text-navy font-semibold">
+                        Upload Logo dari Galeri
+                      </Label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
+                        data-ocid="admin.logo.upload_button"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const base64 = await compressImageToBase64(file);
+                            setLogoUrl(base64);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-navy font-semibold">
+                        Atau Masukkan URL Logo
+                      </Label>
+                      <Input
+                        value={logoUrl}
+                        onChange={(e) => setLogoUrl(e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                        className="border-gray-300"
+                        data-ocid="admin.logo.input"
+                      />
+                    </div>
+                    <Button
+                      className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold"
+                      onClick={() => updateSiteSettingsMutation.mutate(logoUrl)}
+                      disabled={updateSiteSettingsMutation.isPending}
+                      data-ocid="admin.logo.save_button"
+                    >
+                      {updateSiteSettingsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                          Menyimpan...
+                        </>
+                      ) : (
+                        "Simpan Logo"
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Slider Banner Tab */}
+              <TabsContent value="slider" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy">
+                      Manajemen Slider Banner
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {sliderBanners.length} slide tersedia
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 bg-gold text-navy px-4 py-2 rounded-lg font-semibold hover:bg-gold/90 transition-colors"
+                    onClick={() => {
+                      setEditingSlider(null);
+                      setSliderForm(emptySliderForm);
+                      setSliderFormOpen(true);
+                    }}
+                    data-ocid="admin.slider.open_modal_button"
+                  >
+                    <Plus className="w-4 h-4" /> Tambah Slide
+                  </button>
+                </div>
+
+                <Card className="shadow-sm border-0">
+                  <CardContent className="p-0">
+                    {sliderLoading ? (
+                      <div
+                        className="flex items-center justify-center py-12"
+                        data-ocid="admin.slider.loading_state"
+                      >
+                        <Loader2 className="w-8 h-8 animate-spin text-navy" />
+                      </div>
+                    ) : sliderBanners.length === 0 ? (
+                      <div
+                        className="text-center py-12 text-gray-400"
+                        data-ocid="admin.slider.empty_state"
+                      >
+                        <p>Belum ada slide. Tambah slide pertama Anda.</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-navy font-bold">
+                              Urutan
+                            </TableHead>
+                            <TableHead className="text-navy font-bold">
+                              Judul
+                            </TableHead>
+                            <TableHead className="text-navy font-bold">
+                              Gambar
+                            </TableHead>
+                            <TableHead className="text-navy font-bold">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {[...sliderBanners]
+                            .sort((a, b) => Number(a.urutan) - Number(b.urutan))
+                            .map((slide, index) => (
+                              <TableRow
+                                key={slide.id.toString()}
+                                data-ocid={`admin.slider.row.${index + 1}`}
+                              >
+                                <TableCell className="font-bold text-navy">
+                                  {Number(slide.urutan)}
+                                </TableCell>
+                                <TableCell>
+                                  <p className="font-semibold text-navy">
+                                    {slide.title}
+                                  </p>
+                                  {slide.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                      {slide.description}
+                                    </p>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {slide.imageUrl ? (
+                                    <img
+                                      src={slide.imageUrl}
+                                      alt={slide.title}
+                                      className="w-16 h-10 object-cover rounded"
+                                    />
+                                  ) : (
+                                    <span className="text-gray-400 text-xs">
+                                      No image
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="p-1.5 bg-navy/10 hover:bg-navy/20 rounded text-navy transition-colors"
+                                      onClick={() => {
+                                        setEditingSlider(slide);
+                                        setSliderForm({
+                                          title: slide.title,
+                                          description: slide.description,
+                                          imageUrl: slide.imageUrl,
+                                          linkUrl: slide.linkUrl,
+                                          urutan: Number(slide.urutan),
+                                        });
+                                        setSliderFormOpen(true);
+                                      }}
+                                      data-ocid={`admin.slider.edit_button.${index + 1}`}
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-500 transition-colors"
+                                      onClick={() =>
+                                        setDeleteSliderTarget(slide)
+                                      }
+                                      data-ocid={`admin.slider.delete_button.${index + 1}`}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
         )}
       </div>
 

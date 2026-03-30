@@ -173,12 +173,24 @@ export interface Article {
     excerpt: string;
     category: string;
 }
+export interface SliderBanner {
+    id: bigint;
+    title: string;
+    description: string;
+    imageUrl: string;
+    linkUrl: string;
+    urutan: bigint;
+}
 export interface backendInterface {
     createActivity(title: string, description: string, date: Time, location: string): Promise<Activity>;
     createArticle(title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
     createGaleriItem(title: string, description: string, mediaUrl: string, mediaType: string): Promise<GaleriItem>;
     createPendaftaran(nama: string, nik: string, alamat: string, phone: string, email: string, pekerjaan: string, alasan: string): Promise<PendaftaranAnggota>;
     createSatuanSSK(nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
+    createSliderBanner(title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
+    deleteSliderBanner(id: bigint): Promise<void>;
+    getAllSliderBanners(): Promise<Array<SliderBanner>>;
+    updateSliderBanner(id: bigint, title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
     createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     createVideo(title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
     deleteActivity(id: bigint): Promise<void>;
@@ -283,6 +295,62 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createSatuanSSK(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            return result;
+        }
+    }
+    async createSliderBanner(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint): Promise<SliderBanner> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).createSliderBanner(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).createSliderBanner(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async deleteSliderBanner(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).deleteSliderBanner(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).deleteSliderBanner(arg0);
+            return result;
+        }
+    }
+    async getAllSliderBanners(): Promise<Array<SliderBanner>> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).getAllSliderBanners();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).getAllSliderBanners();
+            return result;
+        }
+    }
+    async updateSliderBanner(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: bigint): Promise<SliderBanner> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
             return result;
         }
     }

@@ -92,6 +92,14 @@ export interface VideoYoutube {
   'description' : string,
   'youtubeId' : string,
 }
+export interface SliderBanner {
+  'id' : bigint,
+  'title' : string,
+  'description' : string,
+  'imageUrl' : string,
+  'linkUrl' : string,
+  'urutan' : bigint,
+}
 export interface _SERVICE {
   'createActivity' : ActorMethod<[string, string, Time, string], Activity>,
   'createArticle' : ActorMethod<
@@ -171,6 +179,14 @@ export interface _SERVICE {
     TeamMember
   >,
   'updateVideo' : ActorMethod<[bigint, string, string, string], VideoYoutube>,
+  'createSliderBanner' : ActorMethod<[string, string, string, string, bigint], SliderBanner>,
+  'deleteSliderBanner' : ActorMethod<[bigint], undefined>,
+  'getAllSliderBanners' : ActorMethod<[], Array<SliderBanner>>,
+  'updateSliderBanner' : ActorMethod<[bigint, string, string, string, string, bigint], SliderBanner>,
+  'registerAdmin' : ActorMethod<[], boolean>,
+  'getAdminPrincipal' : ActorMethod<[], [Principal] | []>,
+  'isAdmin' : ActorMethod<[], boolean>,
+  'resetAdmin' : ActorMethod<[], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

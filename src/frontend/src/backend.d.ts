@@ -142,4 +142,8 @@ export interface backendInterface {
   updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
+    registerAdmin(): Promise<boolean>;
+    getAdminPrincipal(): Promise<[Principal] | []>;
+    isAdmin(): Promise<boolean>;
+    resetAdmin(): Promise<boolean>;
 }

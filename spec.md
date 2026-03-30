@@ -1,28 +1,26 @@
 # SSK Kabupaten Subang
 
 ## Current State
-The site has sections including Struktur Organisasi (team members grid) at the bottom of Home.tsx. Admin panel has multiple tabs for managing content. No slider/banner section exists.
+Admin panel di `/admin` menggunakan Internet Identity untuk autentikasi, namun siapa saja yang login via Internet Identity bisa mengakses panel admin.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `SliderBanner` type in backend: `{ id, title, description, imageUrl, linkUrl, urutan }`
-- Backend CRUD: `createSliderBanner`, `getAllSliderBanners`, `updateSliderBanner`, `deleteSliderBanner`
-- Stable storage for slider banners
-- Auto-sliding carousel section on Home page, below Struktur Organisasi, showing slide image, title, description
-- Admin tab "Slider Banner" for managing slides (add/edit/delete, image upload from gallery)
+- Backend: `stable var stableAdminPrincipal : ?Principal = null` — menyimpan principal admin tunggal secara permanen
+- Backend functions: `registerAdmin()`, `isAdmin()`, `getAdminPrincipal()`, `resetAdmin()`
+- Frontend: Pengecekan isAdmin setelah login — hanya principal terdaftar yang bisa akses panel admin
+- Frontend: Layar "Daftarkan sebagai Admin" untuk pengguna pertama yang login
+- Frontend: Layar "Akses Ditolak" untuk pengguna yang bukan admin
+- Frontend: Tombol "Reset Admin" di panel admin untuk mengganti akun admin
 
 ### Modify
-- `main.mo`: add SliderBanner type, stable vars, CRUD, preupgrade/postupgrade
-- `backend.d.ts`, `backend.did.d.ts`, `backend.did.js`: add SliderBanner type and functions
-- `Home.tsx`: add slider section below team section
-- `Admin.tsx`: add Slider Banner tab
+- Admin.tsx: Tambah logika access control di antara login form dan tab panel
 
 ### Remove
-- Nothing removed
+- Tidak ada
 
 ## Implementation Plan
-1. Update backend with SliderBanner type and CRUD
-2. Update all declaration files
-3. Add slider section to Home.tsx
-4. Add admin tab for Slider Banner management
+1. Tambah stable adminPrincipal ke backend
+2. Tambah fungsi registerAdmin, isAdmin, getAdminPrincipal, resetAdmin
+3. Update declarations (backend.did.d.ts, backend.did.js, backend.d.ts)
+4. Update Admin.tsx dengan logika pengecekan admin setelah login

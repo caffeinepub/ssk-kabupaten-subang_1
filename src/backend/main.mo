@@ -153,8 +153,9 @@ actor {
   };
   stable var stableSliderBanners : [(Nat, SliderBanner)] = [];
   stable var stableNextSliderId : Nat = 0;
+  stable var stableAdminPrincipal : ?Principal = null;
 
-  // In-memory working copies
+  // In-memory working copies - initialized from stable storage
   let articles = Map.empty<Nat, Article>();
   let teamMembers = Map.empty<Nat, TeamMember>();
   let activities = Map.empty<Nat, Activity>();
@@ -177,8 +178,9 @@ actor {
   var programUnggulan : ProgramUnggulan = stableProgramUnggulan;
   var profile : Profile = stableProfile;
   var siteSettings : SiteSettings = stableSiteSettings;
+  var adminPrincipal : ?Principal = stableAdminPrincipal;
 
-  // Restore from stable storage on install (first time)
+  // Load data from stable storage into working maps (runs on install AND upgrade)
   for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
   for ((k, v) in stableTeamMembers.vals()) { teamMembers.add(k, v) };
   for ((k, v) in stableActivities.vals()) { activities.add(k, v) };
@@ -197,6 +199,7 @@ actor {
     stableGaleriItems := galeriItems.entries().toArray();
     stablePendaftaranAnggota := pendaftaranAnggota.entries().toArray();
     stableSatuanSSK := satuanSSK.entries().toArray();
+    stableSliderBanners := sliderBanners.entries().toArray();
     stableNextArticleId := nextArticleId;
     stableNextTeamMemberId := nextTeamMemberId;
     stableNextActivityId := nextActivityId;
@@ -204,37 +207,12 @@ actor {
     stableNextGaleriItemId := nextGaleriItemId;
     stableNextPendaftaranId := nextPendaftaranId;
     stableNextSatuanId := nextSatuanId;
+    stableNextSliderId := nextSliderId;
     stableContactInfo := contactInfo;
     stableProgramUnggulan := programUnggulan;
     stableProfile := profile;
     stableSiteSettings := siteSettings;
-    stableSliderBanners := sliderBanners.entries().toArray();
-    stableNextSliderId := nextSliderId;
-  };
-
-  // Restore from stable storage after upgrade
-  system func postupgrade() {
-    for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
-    for ((k, v) in stableTeamMembers.vals()) { teamMembers.add(k, v) };
-    for ((k, v) in stableActivities.vals()) { activities.add(k, v) };
-    for ((k, v) in stableVideos.vals()) { videos.add(k, v) };
-    for ((k, v) in stableGaleriItems.vals()) { galeriItems.add(k, v) };
-    for ((k, v) in stablePendaftaranAnggota.vals()) { pendaftaranAnggota.add(k, v) };
-    for ((k, v) in stableSatuanSSK.vals()) { satuanSSK.add(k, v) };
-  for ((k, v) in stableSliderBanners.vals()) { sliderBanners.add(k, v) };
-    nextArticleId := stableNextArticleId;
-    nextTeamMemberId := stableNextTeamMemberId;
-    nextActivityId := stableNextActivityId;
-    nextVideoId := stableNextVideoId;
-    nextGaleriItemId := stableNextGaleriItemId;
-    nextPendaftaranId := stableNextPendaftaranId;
-    nextSatuanId := stableNextSatuanId;
-    contactInfo := stableContactInfo;
-    programUnggulan := stableProgramUnggulan;
-    profile := stableProfile;
-    siteSettings := stableSiteSettings;
-    for ((k, v) in stableSliderBanners.vals()) { sliderBanners.add(k, v) };
-    nextSliderId := stableNextSliderId;
+    stableAdminPrincipal := adminPrincipal;
   };
 
   // Article CRUD
@@ -564,5 +542,41 @@ actor {
   public shared ({ caller }) func deleteSliderBanner(id : Nat) : async () {
     if (not sliderBanners.containsKey(id)) { Runtime.trap("SliderBanner not found") };
     sliderBanners.remove(id);
+  };
+
+  // Admin principal management
+  public shared ({ caller }) func registerAdmin() : async Bool {
+    switch (adminPrincipal) {
+      case (null) {
+        adminPrincipal := ?caller;
+        true;
+      };
+      case (?_) { false };
+    };
+  };
+
+  public query func getAdminPrincipal() : async ?Principal {
+    adminPrincipal;
+  };
+
+  public query ({ caller }) func isAdmin() : async Bool {
+    switch (adminPrincipal) {
+      case (null) { false };
+      case (?ap) { ap == caller };
+    };
+  };
+
+  public shared ({ caller }) func resetAdmin() : async Bool {
+    switch (adminPrincipal) {
+      case (null) { false };
+      case (?ap) {
+        if (ap == caller) {
+          adminPrincipal := null;
+          true;
+        } else {
+          false;
+        };
+      };
+    };
   };
 };

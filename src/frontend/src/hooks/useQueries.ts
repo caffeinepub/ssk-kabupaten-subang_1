@@ -164,7 +164,7 @@ export function useAllSliderBanners() {
     queryKey: ["sliderBanners"],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as any).getAllSliderBanners();
+      return actor.getAllSliderBanners();
     },
     enabled: !!actor && !isFetching,
   });
