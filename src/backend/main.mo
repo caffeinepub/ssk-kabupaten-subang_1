@@ -1,12 +1,13 @@
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-import List "mo:core/List";
+import Nat "mo:core/Nat";
 import Map "mo:core/Map";
+import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
-import Nat "mo:core/Nat";
-import Order "mo:core/Order";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   // Types
   type Article = {
@@ -35,64 +36,29 @@ actor {
     location : Text;
   };
 
-  // Comparison functions
-  module Article {
-    public func compare(a1 : Article, a2 : Article) : Order.Order {
-      Nat.compare(a1.id, a2.id);
-    };
-  };
-
-  module TeamMember {
-    public func compare(tm1 : TeamMember, tm2 : TeamMember) : Order.Order {
-      Nat.compare(tm1.id, tm2.id);
-    };
-  };
-
-  module Activity {
-    public func compare(a1 : Activity, a2 : Activity) : Order.Order {
-      Nat.compare(a1.id, a2.id);
-    };
+  type ContactInfo = {
+    address : Text;
+    phone : Text;
+    email : Text;
+    operationalHours : Text;
   };
 
   // Storage
   let articles = Map.empty<Nat, Article>();
   var nextArticleId = 0;
 
-  // Seeded team members
-  let teamMembers = List.fromArray<TeamMember>([
-    {
-      id = 1;
-      name = "John Doe";
-      role = "Coordinator";
-      bio = "Experienced population management expert.";
-      imageUrl = "/images/john.jpg";
-    },
-    {
-      id = 2;
-      name = "Jane Smith";
-      role = "Assistant";
-      bio = "Focuses on community outreach.";
-      imageUrl = "/images/jane.jpg";
-    },
-  ]);
+  let teamMembers = Map.empty<Nat, TeamMember>();
+  var nextTeamMemberId = 3;
 
-  // Seeded activities
-  let activities = List.fromArray<Activity>([
-    {
-      id = 1;
-      title = "Population Census";
-      description = "Annual population census in Subang.";
-      date = 1_619_623_000;
-      location = "Subang";
-    },
-    {
-      id = 2;
-      title = "Health Awareness Campaign";
-      description = "Promoting healthy living in the community.";
-      date = 1_625_423_000;
-      location = "Subang";
-    },
-  ]);
+  let activities = Map.empty<Nat, Activity>();
+  var nextActivityId = 3;
+
+  var contactInfo : ContactInfo = {
+    address = "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat 41211";
+    phone = "(0260) 411-1234";
+    email = "info@ssk-subang.go.id";
+    operationalHours = "Senin – Jumat, 08.00 – 16.00 WIB";
+  };
 
   // Article CRUD
   public shared ({ caller }) func createArticle(title : Text, excerpt : Text, content : Text, category : Text, imageUrl : Text) : async Article {
@@ -121,7 +87,7 @@ actor {
   };
 
   public query ({ caller }) func getAllArticles() : async [Article] {
-    articles.values().toArray().sort();
+    articles.values().toArray();
   };
 
   public shared ({ caller }) func updateArticle(id : Nat, title : Text, excerpt : Text, content : Text, category : Text, imageUrl : Text) : async Article {
@@ -150,29 +116,122 @@ actor {
     articles.remove(id);
   };
 
-  // Team members (read-only)
-  public query ({ caller }) func getTeamMembers() : async [TeamMember] {
-    teamMembers.toArray().sort();
+  // TeamMember CRUD
+  public shared ({ caller }) func createTeamMember(name : Text, role : Text, bio : Text, imageUrl : Text) : async TeamMember {
+    let id = nextTeamMemberId;
+    nextTeamMemberId += 1;
+
+    let member : TeamMember = {
+      id;
+      name;
+      role;
+      bio;
+      imageUrl;
+    };
+
+    teamMembers.add(id, member);
+    member;
   };
 
   public query ({ caller }) func getTeamMember(id : Nat) : async TeamMember {
-    let member = teamMembers.toArray().find(func(t) { t.id == id });
-    switch (member) {
+    switch (teamMembers.get(id)) {
       case (null) { Runtime.trap("Team member not found") };
-      case (?m) { m };
+      case (?member) { member };
     };
   };
 
-  // Activities (read-only)
-  public query ({ caller }) func getActivities() : async [Activity] {
-    activities.toArray().sort();
+  public query ({ caller }) func getAllTeamMembers() : async [TeamMember] {
+    teamMembers.values().toArray();
+  };
+
+  public shared ({ caller }) func updateTeamMember(id : Nat, name : Text, role : Text, bio : Text, imageUrl : Text) : async TeamMember {
+    switch (teamMembers.get(id)) {
+      case (null) { Runtime.trap("Team member not found") };
+      case (?existing) {
+        let updated : TeamMember = {
+          id;
+          name;
+          role;
+          bio;
+          imageUrl;
+        };
+        teamMembers.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteTeamMember(id : Nat) : async () {
+    if (not teamMembers.containsKey(id)) {
+      Runtime.trap("Team member not found");
+    };
+    teamMembers.remove(id);
+  };
+
+  // Activity CRUD
+  public shared ({ caller }) func createActivity(title : Text, description : Text, date : Time.Time, location : Text) : async Activity {
+    let id = nextActivityId;
+    nextActivityId += 1;
+
+    let activity : Activity = {
+      id;
+      title;
+      description;
+      date;
+      location;
+    };
+
+    activities.add(id, activity);
+    activity;
   };
 
   public query ({ caller }) func getActivity(id : Nat) : async Activity {
-    let activity = activities.toArray().find(func(a) { a.id == id });
-    switch (activity) {
+    switch (activities.get(id)) {
       case (null) { Runtime.trap("Activity not found") };
-      case (?a) { a };
+      case (?activity) { activity };
     };
+  };
+
+  public query ({ caller }) func getAllActivities() : async [Activity] {
+    activities.values().toArray();
+  };
+
+  public shared ({ caller }) func updateActivity(id : Nat, title : Text, description : Text, date : Time.Time, location : Text) : async Activity {
+    switch (activities.get(id)) {
+      case (null) { Runtime.trap("Activity not found") };
+      case (?existing) {
+        let updated : Activity = {
+          id;
+          title;
+          description;
+          date;
+          location;
+        };
+        activities.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteActivity(id : Nat) : async () {
+    if (not activities.containsKey(id)) {
+      Runtime.trap("Activity not found");
+    };
+    activities.remove(id);
+  };
+
+  // ContactInfo management
+  public query ({ caller }) func getContactInfo() : async ContactInfo {
+    contactInfo;
+  };
+
+  public shared ({ caller }) func updateContactInfo(address : Text, phone : Text, email : Text, operationalHours : Text) : async ContactInfo {
+    contactInfo := {
+      address;
+      phone;
+      email;
+      operationalHours;
+    };
+    contactInfo;
   };
 };

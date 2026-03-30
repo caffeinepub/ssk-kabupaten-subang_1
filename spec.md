@@ -1,28 +1,32 @@
 # SSK Kabupaten Subang
 
 ## Current State
-Website SSK Kabupaten Subang dengan 5 halaman publik: Beranda, Tentang, Berita, Detail Berita, Kontak. Backend sudah punya CRUD artikel (createArticle, updateArticle, deleteArticle, getAllArticles). Belum ada halaman admin.
+- Backend has full CRUD for Articles, and read-only seeded data for TeamMembers and Activities
+- Admin page only manages Articles (Berita)
+- TeamMembers, Activities, and ContactInfo are hardcoded in frontend
+- Pages: Beranda, Tentang (shows team members), Berita & Artikel, Kontak (static contact info)
 
 ## Requested Changes (Diff)
 
 ### Add
-- Halaman Admin (`/admin`) dengan login Internet Identity
-- Form tambah/edit artikel di halaman admin
-- Daftar artikel dengan tombol edit dan hapus
-- Navigasi: tambah link Admin tersembunyi di footer atau akses via URL `/admin`
+- Backend CRUD for TeamMembers: createTeamMember, updateTeamMember, deleteTeamMember
+- Backend CRUD for Activities: createActivity, updateActivity, deleteActivity
+- Backend ContactInfo storage: getContactInfo, updateContactInfo
+- Admin tabs: Anggota Tim, Kegiatan, Kontak Info (in addition to existing Berita tab)
+- useQueries hooks for activities and contact info
 
 ### Modify
-- App.tsx: tambah route `/admin`
-- Header.tsx: tidak perlu diubah (admin diakses via URL langsung)
+- main.mo: TeamMembers and Activities become mutable Maps with full CRUD; add ContactInfo singleton
+- Admin.tsx: Add tabs (Berita, Anggota Tim, Kegiatan, Kontak) with full CRUD UI for each
+- Kontak.tsx: Load contact info from backend instead of hardcoded values
+- useQueries.ts: Add useActivities and useContactInfo hooks
 
 ### Remove
-- Tidak ada yang dihapus
+- Hardcoded seeded TeamMembers and Activities in backend (replaced by admin-managed data with initial seeded records)
 
 ## Implementation Plan
-1. Buat `src/frontend/src/pages/Admin.tsx` dengan:
-   - Login/logout Internet Identity
-   - Daftar artikel dari backend
-   - Form untuk tambah dan edit artikel
-   - Tombol hapus artikel
-2. Update `App.tsx` tambah route `/admin`
-3. Tambah link Admin kecil di Footer
+1. Update main.mo with CRUD for TeamMembers, Activities, and ContactInfo singleton
+2. Regenerate backend bindings
+3. Update useQueries.ts to add activities and contactInfo hooks
+4. Update Admin.tsx to have 4 tabs: Berita, Anggota Tim, Kegiatan, Kontak
+5. Update Kontak.tsx to read from backend contactInfo

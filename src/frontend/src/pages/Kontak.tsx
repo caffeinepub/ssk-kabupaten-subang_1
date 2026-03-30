@@ -1,7 +1,19 @@
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { motion } from "motion/react";
+import { useContactInfo } from "../hooks/useQueries";
 
 export default function Kontak() {
+  const { data: contactInfo } = useContactInfo();
+
+  const address =
+    contactInfo?.address ??
+    "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat 41211";
+  const phone = contactInfo?.phone ?? "(0260) 411-1234";
+  const email = contactInfo?.email ?? "info@ssk-subang.go.id";
+  const operationalHours =
+    contactInfo?.operationalHours ??
+    "Senin \u2013 Jumat, 08.00 \u2013 16.00 WIB";
+
   return (
     <main>
       <section className="bg-navy py-16">
@@ -34,22 +46,13 @@ export default function Kontak() {
               </h2>
               <div className="space-y-5">
                 {[
-                  {
-                    icon: MapPin,
-                    label: "Alamat",
-                    value:
-                      "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat 41211",
-                  },
-                  { icon: Phone, label: "Telepon", value: "(0260) 411-1234" },
-                  {
-                    icon: Mail,
-                    label: "Email",
-                    value: "info@ssk-subang.go.id",
-                  },
+                  { icon: MapPin, label: "Alamat", value: address },
+                  { icon: Phone, label: "Telepon", value: phone },
+                  { icon: Mail, label: "Email", value: email },
                   {
                     icon: Clock,
                     label: "Jam Operasional",
-                    value: "Senin \u2013 Jumat, 08.00 \u2013 16.00 WIB",
+                    value: operationalHours,
                   },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-4">

@@ -26,6 +26,12 @@ export interface Article {
   'excerpt' : string,
   'category' : string,
 }
+export interface ContactInfo {
+  'operationalHours' : string,
+  'email' : string,
+  'address' : string,
+  'phone' : string,
+}
 export interface TeamMember {
   'id' : bigint,
   'bio' : string,
@@ -35,20 +41,40 @@ export interface TeamMember {
 }
 export type Time = bigint;
 export interface _SERVICE {
+  'createActivity' : ActorMethod<[string, string, Time, string], Activity>,
   'createArticle' : ActorMethod<
     [string, string, string, string, string],
     Article
   >,
+  'createTeamMember' : ActorMethod<
+    [string, string, string, string],
+    TeamMember
+  >,
+  'deleteActivity' : ActorMethod<[bigint], undefined>,
   'deleteArticle' : ActorMethod<[bigint], undefined>,
-  'getActivities' : ActorMethod<[], Array<Activity>>,
+  'deleteTeamMember' : ActorMethod<[bigint], undefined>,
   'getActivity' : ActorMethod<[bigint], Activity>,
+  'getAllActivities' : ActorMethod<[], Array<Activity>>,
   'getAllArticles' : ActorMethod<[], Array<Article>>,
+  'getAllTeamMembers' : ActorMethod<[], Array<TeamMember>>,
   'getArticle' : ActorMethod<[bigint], Article>,
+  'getContactInfo' : ActorMethod<[], ContactInfo>,
   'getTeamMember' : ActorMethod<[bigint], TeamMember>,
-  'getTeamMembers' : ActorMethod<[], Array<TeamMember>>,
+  'updateActivity' : ActorMethod<
+    [bigint, string, string, Time, string],
+    Activity
+  >,
   'updateArticle' : ActorMethod<
     [bigint, string, string, string, string, string],
     Article
+  >,
+  'updateContactInfo' : ActorMethod<
+    [string, string, string, string],
+    ContactInfo
+  >,
+  'updateTeamMember' : ActorMethod<
+    [bigint, string, string, string, string],
+    TeamMember
   >,
 }
 export declare const idlService: IDL.ServiceClass;

@@ -22,6 +22,12 @@ export interface Activity {
     location: string;
 }
 export type Time = bigint;
+export interface ContactInfo {
+    operationalHours: string;
+    email: string;
+    address: string;
+    phone: string;
+}
 export interface Article {
     id: bigint;
     title: string;
@@ -32,13 +38,21 @@ export interface Article {
     category: string;
 }
 export interface backendInterface {
+    createActivity(title: string, description: string, date: Time, location: string): Promise<Activity>;
     createArticle(title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
+    createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    deleteActivity(id: bigint): Promise<void>;
     deleteArticle(id: bigint): Promise<void>;
-    getActivities(): Promise<Array<Activity>>;
+    deleteTeamMember(id: bigint): Promise<void>;
     getActivity(id: bigint): Promise<Activity>;
+    getAllActivities(): Promise<Array<Activity>>;
     getAllArticles(): Promise<Array<Article>>;
+    getAllTeamMembers(): Promise<Array<TeamMember>>;
     getArticle(id: bigint): Promise<Article>;
+    getContactInfo(): Promise<ContactInfo>;
     getTeamMember(id: bigint): Promise<TeamMember>;
-    getTeamMembers(): Promise<Array<TeamMember>>;
+    updateActivity(id: bigint, title: string, description: string, date: Time, location: string): Promise<Activity>;
     updateArticle(id: bigint, title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
+    updateContactInfo(address: string, phone: string, email: string, operationalHours: string): Promise<ContactInfo>;
+    updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
 }

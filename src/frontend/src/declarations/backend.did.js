@@ -9,6 +9,13 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const Time = IDL.Int;
+export const Activity = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'date' : Time,
+  'description' : IDL.Text,
+  'location' : IDL.Text,
+});
 export const Article = IDL.Record({
   'id' : IDL.Nat,
   'title' : IDL.Text,
@@ -18,13 +25,6 @@ export const Article = IDL.Record({
   'excerpt' : IDL.Text,
   'category' : IDL.Text,
 });
-export const Activity = IDL.Record({
-  'id' : IDL.Nat,
-  'title' : IDL.Text,
-  'date' : Time,
-  'description' : IDL.Text,
-  'location' : IDL.Text,
-});
 export const TeamMember = IDL.Record({
   'id' : IDL.Nat,
   'bio' : IDL.Text,
@@ -32,23 +32,57 @@ export const TeamMember = IDL.Record({
   'role' : IDL.Text,
   'imageUrl' : IDL.Text,
 });
+export const ContactInfo = IDL.Record({
+  'operationalHours' : IDL.Text,
+  'email' : IDL.Text,
+  'address' : IDL.Text,
+  'phone' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
+  'createActivity' : IDL.Func(
+      [IDL.Text, IDL.Text, Time, IDL.Text],
+      [Activity],
+      [],
+    ),
   'createArticle' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [Article],
       [],
     ),
+  'createTeamMember' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [TeamMember],
+      [],
+    ),
+  'deleteActivity' : IDL.Func([IDL.Nat], [], []),
   'deleteArticle' : IDL.Func([IDL.Nat], [], []),
-  'getActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
+  'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
   'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
+  'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
   'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
+  'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
   'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
+  'getContactInfo' : IDL.Func([], [ContactInfo], ['query']),
   'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
-  'getTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+  'updateActivity' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
+      [Activity],
+      [],
+    ),
   'updateArticle' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [Article],
+      [],
+    ),
+  'updateContactInfo' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [ContactInfo],
+      [],
+    ),
+  'updateTeamMember' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [TeamMember],
       [],
     ),
 });
@@ -57,6 +91,13 @@ export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   const Time = IDL.Int;
+  const Activity = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'date' : Time,
+    'description' : IDL.Text,
+    'location' : IDL.Text,
+  });
   const Article = IDL.Record({
     'id' : IDL.Nat,
     'title' : IDL.Text,
@@ -66,13 +107,6 @@ export const idlFactory = ({ IDL }) => {
     'excerpt' : IDL.Text,
     'category' : IDL.Text,
   });
-  const Activity = IDL.Record({
-    'id' : IDL.Nat,
-    'title' : IDL.Text,
-    'date' : Time,
-    'description' : IDL.Text,
-    'location' : IDL.Text,
-  });
   const TeamMember = IDL.Record({
     'id' : IDL.Nat,
     'bio' : IDL.Text,
@@ -80,23 +114,57 @@ export const idlFactory = ({ IDL }) => {
     'role' : IDL.Text,
     'imageUrl' : IDL.Text,
   });
+  const ContactInfo = IDL.Record({
+    'operationalHours' : IDL.Text,
+    'email' : IDL.Text,
+    'address' : IDL.Text,
+    'phone' : IDL.Text,
+  });
   
   return IDL.Service({
+    'createActivity' : IDL.Func(
+        [IDL.Text, IDL.Text, Time, IDL.Text],
+        [Activity],
+        [],
+      ),
     'createArticle' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [Article],
         [],
       ),
+    'createTeamMember' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [TeamMember],
+        [],
+      ),
+    'deleteActivity' : IDL.Func([IDL.Nat], [], []),
     'deleteArticle' : IDL.Func([IDL.Nat], [], []),
-    'getActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
+    'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
     'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
+    'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
     'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
+    'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
     'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
+    'getContactInfo' : IDL.Func([], [ContactInfo], ['query']),
     'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
-    'getTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+    'updateActivity' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
+        [Activity],
+        [],
+      ),
     'updateArticle' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [Article],
+        [],
+      ),
+    'updateContactInfo' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [ContactInfo],
+        [],
+      ),
+    'updateTeamMember' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [TeamMember],
         [],
       ),
   });

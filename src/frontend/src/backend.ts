@@ -104,6 +104,12 @@ export interface Activity {
     location: string;
 }
 export type Time = bigint;
+export interface ContactInfo {
+    operationalHours: string;
+    email: string;
+    address: string;
+    phone: string;
+}
 export interface Article {
     id: bigint;
     title: string;
@@ -114,18 +120,40 @@ export interface Article {
     category: string;
 }
 export interface backendInterface {
+    createActivity(title: string, description: string, date: Time, location: string): Promise<Activity>;
     createArticle(title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
+    createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    deleteActivity(id: bigint): Promise<void>;
     deleteArticle(id: bigint): Promise<void>;
-    getActivities(): Promise<Array<Activity>>;
+    deleteTeamMember(id: bigint): Promise<void>;
     getActivity(id: bigint): Promise<Activity>;
+    getAllActivities(): Promise<Array<Activity>>;
     getAllArticles(): Promise<Array<Article>>;
+    getAllTeamMembers(): Promise<Array<TeamMember>>;
     getArticle(id: bigint): Promise<Article>;
+    getContactInfo(): Promise<ContactInfo>;
     getTeamMember(id: bigint): Promise<TeamMember>;
-    getTeamMembers(): Promise<Array<TeamMember>>;
+    updateActivity(id: bigint, title: string, description: string, date: Time, location: string): Promise<Activity>;
     updateArticle(id: bigint, title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
+    updateContactInfo(address: string, phone: string, email: string, operationalHours: string): Promise<ContactInfo>;
+    updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async createActivity(arg0: string, arg1: string, arg2: Time, arg3: string): Promise<Activity> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createActivity(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createActivity(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
     async createArticle(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<Article> {
         if (this.processError) {
             try {
@@ -137,6 +165,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createArticle(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async createTeamMember(arg0: string, arg1: string, arg2: string, arg3: string): Promise<TeamMember> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createTeamMember(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createTeamMember(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async deleteActivity(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteActivity(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteActivity(arg0);
             return result;
         }
     }
@@ -154,17 +210,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getActivities(): Promise<Array<Activity>> {
+    async deleteTeamMember(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getActivities();
+                const result = await this.actor.deleteTeamMember(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getActivities();
+            const result = await this.actor.deleteTeamMember(arg0);
             return result;
         }
     }
@@ -182,6 +238,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllActivities(): Promise<Array<Activity>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllActivities();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllActivities();
+            return result;
+        }
+    }
     async getAllArticles(): Promise<Array<Article>> {
         if (this.processError) {
             try {
@@ -193,6 +263,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllArticles();
+            return result;
+        }
+    }
+    async getAllTeamMembers(): Promise<Array<TeamMember>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllTeamMembers();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllTeamMembers();
             return result;
         }
     }
@@ -210,6 +294,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getContactInfo(): Promise<ContactInfo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getContactInfo();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getContactInfo();
+            return result;
+        }
+    }
     async getTeamMember(arg0: bigint): Promise<TeamMember> {
         if (this.processError) {
             try {
@@ -224,17 +322,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getTeamMembers(): Promise<Array<TeamMember>> {
+    async updateActivity(arg0: bigint, arg1: string, arg2: string, arg3: Time, arg4: string): Promise<Activity> {
         if (this.processError) {
             try {
-                const result = await this.actor.getTeamMembers();
+                const result = await this.actor.updateActivity(arg0, arg1, arg2, arg3, arg4);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getTeamMembers();
+            const result = await this.actor.updateActivity(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }
@@ -249,6 +347,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateArticle(arg0, arg1, arg2, arg3, arg4, arg5);
+            return result;
+        }
+    }
+    async updateContactInfo(arg0: string, arg1: string, arg2: string, arg3: string): Promise<ContactInfo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateContactInfo(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateContactInfo(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async updateTeamMember(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string): Promise<TeamMember> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateTeamMember(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateTeamMember(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }

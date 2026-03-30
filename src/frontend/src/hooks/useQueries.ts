@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Article, TeamMember } from "../backend.d";
+import type { Activity, Article, ContactInfo, TeamMember } from "../backend.d";
 import { useActor } from "./useActor";
 
 export function useAllArticles() {
@@ -32,7 +32,31 @@ export function useTeamMembers() {
     queryKey: ["teamMembers"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getTeamMembers();
+      return actor.getAllTeamMembers();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAllActivities() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Activity[]>({
+    queryKey: ["activities"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllActivities();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useContactInfo() {
+  const { actor, isFetching } = useActor();
+  return useQuery<ContactInfo>({
+    queryKey: ["contactInfo"],
+    queryFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return actor.getContactInfo();
     },
     enabled: !!actor && !isFetching,
   });
