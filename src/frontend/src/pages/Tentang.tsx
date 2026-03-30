@@ -149,33 +149,6 @@ export default function Tentang() {
           </div>
         </div>
       </section>
-
-      <section className="py-14 bg-gray-50">
-        <div className="max-w-3xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-8"
-          >
-            <h2 className="text-navy font-bold text-2xl uppercase tracking-wide">
-              Video Profil SSK
-            </h2>
-            <div className="w-16 h-1 bg-gold mx-auto mt-3" />
-          </motion.div>
-          <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="SSK Kabupaten Subang"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            />
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

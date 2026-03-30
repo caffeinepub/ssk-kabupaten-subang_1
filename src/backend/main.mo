@@ -3,9 +3,9 @@ import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Runtime "mo:core/Runtime";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   type Article = {
     id : Nat;
