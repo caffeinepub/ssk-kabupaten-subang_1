@@ -25,6 +25,36 @@ export const Article = IDL.Record({
   'excerpt' : IDL.Text,
   'category' : IDL.Text,
 });
+export const GaleriItem = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'tanggal' : Time,
+  'description' : IDL.Text,
+  'mediaUrl' : IDL.Text,
+  'mediaType' : IDL.Text,
+});
+export const PendaftaranAnggota = IDL.Record({
+  'id' : IDL.Nat,
+  'nik' : IDL.Text,
+  'status' : IDL.Text,
+  'alamat' : IDL.Text,
+  'alasan' : IDL.Text,
+  'nama' : IDL.Text,
+  'email' : IDL.Text,
+  'pekerjaan' : IDL.Text,
+  'tanggalDaftar' : Time,
+  'phone' : IDL.Text,
+});
+export const SatuanSSK = IDL.Record({
+  'id' : IDL.Nat,
+  'alamat' : IDL.Text,
+  'nama' : IDL.Text,
+  'deskripsi' : IDL.Text,
+  'email' : IDL.Text,
+  'logoUrl' : IDL.Text,
+  'phone' : IDL.Text,
+  'ketua' : IDL.Text,
+});
 export const TeamMember = IDL.Record({
   'id' : IDL.Nat,
   'bio' : IDL.Text,
@@ -32,12 +62,34 @@ export const TeamMember = IDL.Record({
   'role' : IDL.Text,
   'imageUrl' : IDL.Text,
 });
+export const VideoYoutube = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'description' : IDL.Text,
+  'youtubeId' : IDL.Text,
+});
 export const ContactInfo = IDL.Record({
   'operationalHours' : IDL.Text,
   'email' : IDL.Text,
   'address' : IDL.Text,
   'phone' : IDL.Text,
 });
+export const Profile = IDL.Record({
+  'tagline' : IDL.Text,
+  'misi' : IDL.Text,
+  'visi' : IDL.Text,
+  'deskripsi' : IDL.Text,
+  'namaOrganisasi' : IDL.Text,
+});
+export const ProgramUnggulan = IDL.Record({
+  'kecamatanTerlayani' : IDL.Text,
+  'judul' : IDL.Text,
+  'deskripsi' : IDL.Text,
+  'penghargaan' : IDL.Text,
+  'programKegiatan' : IDL.Text,
+  'pesertaTerlatih' : IDL.Text,
+});
+export const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
 
 export const idlService = IDL.Service({
   'createActivity' : IDL.Func(
@@ -50,20 +102,47 @@ export const idlService = IDL.Service({
       [Article],
       [],
     ),
+  'createGaleriItem' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [GaleriItem],
+      [],
+    ),
+  'createPendaftaran' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [PendaftaranAnggota],
+      [],
+    ),
+  'createSatuanSSK' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [SatuanSSK],
+      [],
+    ),
   'createTeamMember' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [TeamMember],
       [],
     ),
+  'createVideo' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [VideoYoutube], []),
   'deleteActivity' : IDL.Func([IDL.Nat], [], []),
   'deleteArticle' : IDL.Func([IDL.Nat], [], []),
+  'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
+  'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
+  'deleteSatuanSSK' : IDL.Func([IDL.Nat], [], []),
   'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
+  'deleteVideo' : IDL.Func([IDL.Nat], [], []),
   'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
   'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
   'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
+  'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
+  'getAllPendaftaran' : IDL.Func([], [IDL.Vec(PendaftaranAnggota)], ['query']),
+  'getAllSatuanSSK' : IDL.Func([], [IDL.Vec(SatuanSSK)], ['query']),
   'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+  'getAllVideos' : IDL.Func([], [IDL.Vec(VideoYoutube)], ['query']),
   'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
   'getContactInfo' : IDL.Func([], [ContactInfo], ['query']),
+  'getProfile' : IDL.Func([], [Profile], ['query']),
+  'getProgramUnggulan' : IDL.Func([], [ProgramUnggulan], ['query']),
+  'getSiteSettings' : IDL.Func([], [SiteSettings], ['query']),
   'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
   'updateActivity' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
@@ -80,9 +159,49 @@ export const idlService = IDL.Service({
       [ContactInfo],
       [],
     ),
+  'updateGaleriItem' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [GaleriItem],
+      [],
+    ),
+  'updatePendaftaranStatus' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [PendaftaranAnggota],
+      [],
+    ),
+  'updateProfile' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [Profile],
+      [],
+    ),
+  'updateProgramUnggulan' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [ProgramUnggulan],
+      [],
+    ),
+  'updateSatuanSSK' : IDL.Func(
+      [
+        IDL.Nat,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [SatuanSSK],
+      [],
+    ),
+  'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
   'updateTeamMember' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [TeamMember],
+      [],
+    ),
+  'updateVideo' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+      [VideoYoutube],
       [],
     ),
 });
@@ -107,6 +226,36 @@ export const idlFactory = ({ IDL }) => {
     'excerpt' : IDL.Text,
     'category' : IDL.Text,
   });
+  const GaleriItem = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'tanggal' : Time,
+    'description' : IDL.Text,
+    'mediaUrl' : IDL.Text,
+    'mediaType' : IDL.Text,
+  });
+  const PendaftaranAnggota = IDL.Record({
+    'id' : IDL.Nat,
+    'nik' : IDL.Text,
+    'status' : IDL.Text,
+    'alamat' : IDL.Text,
+    'alasan' : IDL.Text,
+    'nama' : IDL.Text,
+    'email' : IDL.Text,
+    'pekerjaan' : IDL.Text,
+    'tanggalDaftar' : Time,
+    'phone' : IDL.Text,
+  });
+  const SatuanSSK = IDL.Record({
+    'id' : IDL.Nat,
+    'alamat' : IDL.Text,
+    'nama' : IDL.Text,
+    'deskripsi' : IDL.Text,
+    'email' : IDL.Text,
+    'logoUrl' : IDL.Text,
+    'phone' : IDL.Text,
+    'ketua' : IDL.Text,
+  });
   const TeamMember = IDL.Record({
     'id' : IDL.Nat,
     'bio' : IDL.Text,
@@ -114,12 +263,34 @@ export const idlFactory = ({ IDL }) => {
     'role' : IDL.Text,
     'imageUrl' : IDL.Text,
   });
+  const VideoYoutube = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'description' : IDL.Text,
+    'youtubeId' : IDL.Text,
+  });
   const ContactInfo = IDL.Record({
     'operationalHours' : IDL.Text,
     'email' : IDL.Text,
     'address' : IDL.Text,
     'phone' : IDL.Text,
   });
+  const Profile = IDL.Record({
+    'tagline' : IDL.Text,
+    'misi' : IDL.Text,
+    'visi' : IDL.Text,
+    'deskripsi' : IDL.Text,
+    'namaOrganisasi' : IDL.Text,
+  });
+  const ProgramUnggulan = IDL.Record({
+    'kecamatanTerlayani' : IDL.Text,
+    'judul' : IDL.Text,
+    'deskripsi' : IDL.Text,
+    'penghargaan' : IDL.Text,
+    'programKegiatan' : IDL.Text,
+    'pesertaTerlatih' : IDL.Text,
+  });
+  const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
   
   return IDL.Service({
     'createActivity' : IDL.Func(
@@ -132,20 +303,55 @@ export const idlFactory = ({ IDL }) => {
         [Article],
         [],
       ),
+    'createGaleriItem' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [GaleriItem],
+        [],
+      ),
+    'createPendaftaran' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [PendaftaranAnggota],
+        [],
+      ),
+    'createSatuanSSK' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [SatuanSSK],
+        [],
+      ),
     'createTeamMember' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [TeamMember],
         [],
       ),
+    'createVideo' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [VideoYoutube],
+        [],
+      ),
     'deleteActivity' : IDL.Func([IDL.Nat], [], []),
     'deleteArticle' : IDL.Func([IDL.Nat], [], []),
+    'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
+    'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
+    'deleteSatuanSSK' : IDL.Func([IDL.Nat], [], []),
     'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
+    'deleteVideo' : IDL.Func([IDL.Nat], [], []),
     'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
     'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
     'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
+    'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
+    'getAllPendaftaran' : IDL.Func(
+        [],
+        [IDL.Vec(PendaftaranAnggota)],
+        ['query'],
+      ),
+    'getAllSatuanSSK' : IDL.Func([], [IDL.Vec(SatuanSSK)], ['query']),
     'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+    'getAllVideos' : IDL.Func([], [IDL.Vec(VideoYoutube)], ['query']),
     'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
     'getContactInfo' : IDL.Func([], [ContactInfo], ['query']),
+    'getProfile' : IDL.Func([], [Profile], ['query']),
+    'getProgramUnggulan' : IDL.Func([], [ProgramUnggulan], ['query']),
+    'getSiteSettings' : IDL.Func([], [SiteSettings], ['query']),
     'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
     'updateActivity' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
@@ -162,9 +368,49 @@ export const idlFactory = ({ IDL }) => {
         [ContactInfo],
         [],
       ),
+    'updateGaleriItem' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [GaleriItem],
+        [],
+      ),
+    'updatePendaftaranStatus' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [PendaftaranAnggota],
+        [],
+      ),
+    'updateProfile' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [Profile],
+        [],
+      ),
+    'updateProgramUnggulan' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [ProgramUnggulan],
+        [],
+      ),
+    'updateSatuanSSK' : IDL.Func(
+        [
+          IDL.Nat,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [SatuanSSK],
+        [],
+      ),
+    'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
     'updateTeamMember' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [TeamMember],
+        [],
+      ),
+    'updateVideo' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [VideoYoutube],
         [],
       ),
   });

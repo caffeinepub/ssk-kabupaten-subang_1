@@ -1,5 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Activity, Article, ContactInfo, TeamMember } from "../backend.d";
+import type {
+  Activity,
+  Article,
+  ContactInfo,
+  GaleriItem,
+  PendaftaranAnggota,
+  Profile,
+  ProgramUnggulan,
+  SatuanSSK,
+  SiteSettings,
+  TeamMember,
+  VideoYoutube,
+} from "../backend.d";
 import { useActor } from "./useActor";
 
 export function useAllArticles() {
@@ -57,6 +69,90 @@ export function useContactInfo() {
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
       return actor.getContactInfo();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useProgramUnggulan() {
+  const { actor, isFetching } = useActor();
+  return useQuery<ProgramUnggulan>({
+    queryKey: ["programUnggulan"],
+    queryFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return actor.getProgramUnggulan();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAllVideos() {
+  const { actor, isFetching } = useActor();
+  return useQuery<VideoYoutube[]>({
+    queryKey: ["videos"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return (actor as any).getAllVideos();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useProfile() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Profile>({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return (actor as any).getProfile();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAllGaleriItems() {
+  const { actor, isFetching } = useActor();
+  return useQuery<GaleriItem[]>({
+    queryKey: ["galeriItems"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllGaleriItems();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAllPendaftaran() {
+  const { actor, isFetching } = useActor();
+  return useQuery<PendaftaranAnggota[]>({
+    queryKey: ["pendaftaran"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllPendaftaran();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAllSatuanSSK() {
+  const { actor, isFetching } = useActor();
+  return useQuery<SatuanSSK[]>({
+    queryKey: ["satuanSSK"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllSatuanSSK();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSiteSettings() {
+  const { actor, isFetching } = useActor();
+  return useQuery<SiteSettings>({
+    queryKey: ["siteSettings"],
+    queryFn: async () => {
+      if (!actor) throw new Error("No actor");
+      return actor.getSiteSettings();
     },
     enabled: !!actor && !isFetching,
   });

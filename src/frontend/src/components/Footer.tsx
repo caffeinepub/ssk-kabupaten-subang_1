@@ -1,7 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, Mail, MapPin, Phone, Shield } from "lucide-react";
+import { useContactInfo, useSiteSettings } from "../hooks/useQueries";
 
 export default function Footer() {
+  const { data: contactInfo } = useContactInfo();
+  const { data: siteSettings } = useSiteSettings();
   const year = new Date().getFullYear();
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
@@ -12,9 +15,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center flex-shrink-0">
-                <Shield className="w-6 h-6 text-navy" />
-              </div>
+              {siteSettings?.logoUrl ? (
+                <img
+                  src={siteSettings.logoUrl}
+                  alt="Logo SSK"
+                  className="w-10 h-10 object-contain rounded-full flex-shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-navy" />
+                </div>
+              )}
               <div>
                 <p className="font-bold text-sm leading-tight">
                   SSK KABUPATEN SUBANG
@@ -38,6 +49,9 @@ export default function Footer() {
                   { label: "Beranda", href: "/" },
                   { label: "Tentang SSK", href: "/tentang" },
                   { label: "Berita & Artikel", href: "/berita" },
+                  { label: "Galeri Kegiatan", href: "/galeri" },
+                  { label: "Satuan SSK", href: "/satuan" },
+                  { label: "Daftar Anggota", href: "/daftar" },
                   { label: "Kontak", href: "/kontak" },
                 ] as const
               ).map((link) => (
@@ -86,15 +100,16 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-gray-300 text-sm">
                 <MapPin className="w-4 h-4 mt-0.5 text-gold flex-shrink-0" />
-                Jl. Brigjen Katamso No. 1, Subang, Jawa Barat
+                {contactInfo?.address ??
+                  "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat"}
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <Phone className="w-4 h-4 text-gold flex-shrink-0" />
-                (0260) 411-1234
+                {contactInfo?.phone ?? "(0260) 411-1234"}
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <Mail className="w-4 h-4 text-gold flex-shrink-0" />
-                info@ssk-subang.go.id
+                {contactInfo?.email ?? "info@ssk-subang.go.id"}
               </li>
             </ul>
           </div>

@@ -12,8 +12,11 @@ import Header from "./components/Header";
 import Admin from "./pages/Admin";
 import Berita from "./pages/Berita";
 import BeritaDetail from "./pages/BeritaDetail";
+import Daftar from "./pages/Daftar";
+import Galeri from "./pages/Galeri";
 import Home from "./pages/Home";
 import Kontak from "./pages/Kontak";
+import Satuan from "./pages/Satuan";
 import Tentang from "./pages/Tentang";
 
 export { Link, useRouterState };
@@ -60,6 +63,21 @@ const adminRoute = createRoute({
   path: "/admin",
   component: Admin,
 });
+const galeriRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/galeri",
+  component: Galeri,
+});
+const daftarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/daftar",
+  component: Daftar,
+});
+const satuanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/satuan",
+  component: Satuan,
+});
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
@@ -68,6 +86,9 @@ const routeTree = rootRoute.addChildren([
   beritaDetailRoute,
   kontakRoute,
   adminRoute,
+  galeriRoute,
+  daftarRoute,
+  satuanRoute,
 ]);
 
 const router = createRouter({ routeTree });

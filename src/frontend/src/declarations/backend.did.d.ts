@@ -32,6 +32,52 @@ export interface ContactInfo {
   'address' : string,
   'phone' : string,
 }
+export interface GaleriItem {
+  'id' : bigint,
+  'title' : string,
+  'tanggal' : Time,
+  'description' : string,
+  'mediaUrl' : string,
+  'mediaType' : string,
+}
+export interface PendaftaranAnggota {
+  'id' : bigint,
+  'nik' : string,
+  'status' : string,
+  'alamat' : string,
+  'alasan' : string,
+  'nama' : string,
+  'email' : string,
+  'pekerjaan' : string,
+  'tanggalDaftar' : Time,
+  'phone' : string,
+}
+export interface Profile {
+  'tagline' : string,
+  'misi' : string,
+  'visi' : string,
+  'deskripsi' : string,
+  'namaOrganisasi' : string,
+}
+export interface ProgramUnggulan {
+  'kecamatanTerlayani' : string,
+  'judul' : string,
+  'deskripsi' : string,
+  'penghargaan' : string,
+  'programKegiatan' : string,
+  'pesertaTerlatih' : string,
+}
+export interface SatuanSSK {
+  'id' : bigint,
+  'alamat' : string,
+  'nama' : string,
+  'deskripsi' : string,
+  'email' : string,
+  'logoUrl' : string,
+  'phone' : string,
+  'ketua' : string,
+}
+export interface SiteSettings { 'logoUrl' : string }
 export interface TeamMember {
   'id' : bigint,
   'bio' : string,
@@ -40,25 +86,55 @@ export interface TeamMember {
   'imageUrl' : string,
 }
 export type Time = bigint;
+export interface VideoYoutube {
+  'id' : bigint,
+  'title' : string,
+  'description' : string,
+  'youtubeId' : string,
+}
 export interface _SERVICE {
   'createActivity' : ActorMethod<[string, string, Time, string], Activity>,
   'createArticle' : ActorMethod<
     [string, string, string, string, string],
     Article
   >,
+  'createGaleriItem' : ActorMethod<
+    [string, string, string, string],
+    GaleriItem
+  >,
+  'createPendaftaran' : ActorMethod<
+    [string, string, string, string, string, string, string],
+    PendaftaranAnggota
+  >,
+  'createSatuanSSK' : ActorMethod<
+    [string, string, string, string, string, string, string],
+    SatuanSSK
+  >,
   'createTeamMember' : ActorMethod<
     [string, string, string, string],
     TeamMember
   >,
+  'createVideo' : ActorMethod<[string, string, string], VideoYoutube>,
   'deleteActivity' : ActorMethod<[bigint], undefined>,
   'deleteArticle' : ActorMethod<[bigint], undefined>,
+  'deleteGaleriItem' : ActorMethod<[bigint], undefined>,
+  'deletePendaftaran' : ActorMethod<[bigint], undefined>,
+  'deleteSatuanSSK' : ActorMethod<[bigint], undefined>,
   'deleteTeamMember' : ActorMethod<[bigint], undefined>,
+  'deleteVideo' : ActorMethod<[bigint], undefined>,
   'getActivity' : ActorMethod<[bigint], Activity>,
   'getAllActivities' : ActorMethod<[], Array<Activity>>,
   'getAllArticles' : ActorMethod<[], Array<Article>>,
+  'getAllGaleriItems' : ActorMethod<[], Array<GaleriItem>>,
+  'getAllPendaftaran' : ActorMethod<[], Array<PendaftaranAnggota>>,
+  'getAllSatuanSSK' : ActorMethod<[], Array<SatuanSSK>>,
   'getAllTeamMembers' : ActorMethod<[], Array<TeamMember>>,
+  'getAllVideos' : ActorMethod<[], Array<VideoYoutube>>,
   'getArticle' : ActorMethod<[bigint], Article>,
   'getContactInfo' : ActorMethod<[], ContactInfo>,
+  'getProfile' : ActorMethod<[], Profile>,
+  'getProgramUnggulan' : ActorMethod<[], ProgramUnggulan>,
+  'getSiteSettings' : ActorMethod<[], SiteSettings>,
   'getTeamMember' : ActorMethod<[bigint], TeamMember>,
   'updateActivity' : ActorMethod<
     [bigint, string, string, Time, string],
@@ -72,10 +148,29 @@ export interface _SERVICE {
     [string, string, string, string],
     ContactInfo
   >,
+  'updateGaleriItem' : ActorMethod<
+    [bigint, string, string, string, string],
+    GaleriItem
+  >,
+  'updatePendaftaranStatus' : ActorMethod<[bigint, string], PendaftaranAnggota>,
+  'updateProfile' : ActorMethod<
+    [string, string, string, string, string],
+    Profile
+  >,
+  'updateProgramUnggulan' : ActorMethod<
+    [string, string, string, string, string, string],
+    ProgramUnggulan
+  >,
+  'updateSatuanSSK' : ActorMethod<
+    [bigint, string, string, string, string, string, string, string],
+    SatuanSSK
+  >,
+  'updateSiteSettings' : ActorMethod<[string], SiteSettings>,
   'updateTeamMember' : ActorMethod<
     [bigint, string, string, string, string],
     TeamMember
   >,
+  'updateVideo' : ActorMethod<[bigint, string, string, string], VideoYoutube>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

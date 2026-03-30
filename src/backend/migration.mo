@@ -1,5 +1,4 @@
 import Map "mo:core/Map";
-import List "mo:core/List";
 import Nat "mo:core/Nat";
 import Time "mo:core/Time";
 
@@ -37,40 +36,112 @@ module {
     operationalHours : Text;
   };
 
+  type ProgramUnggulan = {
+    judul : Text;
+    deskripsi : Text;
+    pesertaTerlatih : Text;
+    programKegiatan : Text;
+    penghargaan : Text;
+    kecamatanTerlayani : Text;
+  };
+
+  type VideoYoutube = {
+    id : Nat;
+    title : Text;
+    youtubeId : Text;
+    description : Text;
+  };
+
+  type Profile = {
+    namaOrganisasi : Text;
+    tagline : Text;
+    deskripsi : Text;
+    visi : Text;
+    misi : Text;
+  };
+
+  type GaleriItem = {
+    id : Nat;
+    title : Text;
+    description : Text;
+    mediaUrl : Text;
+    mediaType : Text;
+    tanggal : Time.Time;
+  };
+
+  type PendaftaranAnggota = {
+    id : Nat;
+    nama : Text;
+    nik : Text;
+    alamat : Text;
+    phone : Text;
+    email : Text;
+    pekerjaan : Text;
+    alasan : Text;
+    tanggalDaftar : Time.Time;
+    status : Text;
+  };
+
+  type SatuanSSK = {
+    id : Nat;
+    nama : Text;
+    alamat : Text;
+    phone : Text;
+    email : Text;
+    deskripsi : Text;
+    logoUrl : Text;
+    ketua : Text;
+  };
+
+  type SiteSettings = {
+    logoUrl : Text;
+  };
+
   type OldActor = {
     articles : Map.Map<Nat, Article>;
+    teamMembers : Map.Map<Nat, TeamMember>;
+    activities : Map.Map<Nat, Activity>;
+    videos : Map.Map<Nat, VideoYoutube>;
     nextArticleId : Nat;
-    teamMembers : List.List<TeamMember>;
-    activities : List.List<Activity>;
+    nextTeamMemberId : Nat;
+    nextActivityId : Nat;
+    nextVideoId : Nat;
+    contactInfo : ContactInfo;
+    programUnggulan : ProgramUnggulan;
+    profile : Profile;
   };
 
   type NewActor = {
     articles : Map.Map<Nat, Article>;
-    nextArticleId : Nat;
     teamMembers : Map.Map<Nat, TeamMember>;
-    nextTeamMemberId : Nat;
     activities : Map.Map<Nat, Activity>;
+    videos : Map.Map<Nat, VideoYoutube>;
+    galeriItems : Map.Map<Nat, GaleriItem>;
+    pendaftaranAnggota : Map.Map<Nat, PendaftaranAnggota>;
+    satuanSSK : Map.Map<Nat, SatuanSSK>;
+    nextArticleId : Nat;
+    nextTeamMemberId : Nat;
     nextActivityId : Nat;
-    var contactInfo : ContactInfo;
+    nextVideoId : Nat;
+    nextGaleriItemId : Nat;
+    nextPendaftaranId : Nat;
+    nextSatuanId : Nat;
+    contactInfo : ContactInfo;
+    programUnggulan : ProgramUnggulan;
+    profile : Profile;
+    siteSettings : SiteSettings;
   };
 
   public func run(old : OldActor) : NewActor {
-    let newTeamMembers = Map.fromIter<Nat, TeamMember>(old.teamMembers.toArray().map(func(tm) { (tm.id, tm) }).values());
-    let newActivities = Map.fromIter<Nat, Activity>(old.activities.toArray().map(func(a) { (a.id, a) }).values());
-
     {
-      articles = old.articles;
-      nextArticleId = old.nextArticleId;
-      teamMembers = newTeamMembers;
-      nextTeamMemberId = 3;
-      activities = newActivities;
-      nextActivityId = 3;
-      var contactInfo = {
-        address = "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat 41211";
-        phone = "(0260) 411-1234";
-        email = "info@ssk-subang.go.id";
-        operationalHours = "Senin – Jumat, 08.00 – 16.00 WIB";
-      };
+      old with
+      galeriItems = Map.empty<Nat, GaleriItem>();
+      pendaftaranAnggota = Map.empty<Nat, PendaftaranAnggota>();
+      satuanSSK = Map.empty<Nat, SatuanSSK>();
+      nextGaleriItemId = 0;
+      nextPendaftaranId = 0;
+      nextSatuanId = 0;
+      siteSettings = { logoUrl = "" };
     };
   };
 };

@@ -34,13 +34,65 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Activity, Article, TeamMember } from "../backend.d";
+import type {
+  Activity,
+  Article,
+  GaleriItem,
+  PendaftaranAnggota,
+  Profile,
+  SatuanSSK,
+  TeamMember,
+  VideoYoutube,
+} from "../backend.d";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+
+async function compressImageToBase64(
+  file: File,
+  maxSize = 800,
+  quality = 0.8,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target!.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 import {
   useAllActivities,
   useAllArticles,
+  useAllGaleriItems,
+  useAllPendaftaran,
+  useAllSatuanSSK,
+  useAllVideos,
   useContactInfo,
+  useProfile,
+  useProgramUnggulan,
+  useSiteSettings,
   useTeamMembers,
 } from "../hooks/useQueries";
 
@@ -86,6 +138,47 @@ const emptyActivityForm: ActivityForm = {
   description: "",
   date: "",
   location: "",
+};
+// ---- VideoYoutube ----
+interface VideoForm {
+  title: string;
+  youtubeId: string;
+  description: string;
+}
+const emptyVideoForm: VideoForm = { title: "", youtubeId: "", description: "" };
+
+// ---- GaleriItem ----
+interface GaleriForm {
+  title: string;
+  description: string;
+  mediaType: string;
+  mediaUrl: string;
+}
+const emptyGaleriForm: GaleriForm = {
+  title: "",
+  description: "",
+  mediaType: "foto",
+  mediaUrl: "",
+};
+
+// ---- SatuanSSK ----
+interface SatuanForm {
+  nama: string;
+  ketua: string;
+  alamat: string;
+  phone: string;
+  email: string;
+  deskripsi: string;
+  logoUrl: string;
+}
+const emptySatuanForm: SatuanForm = {
+  nama: "",
+  ketua: "",
+  alamat: "",
+  phone: "",
+  email: "",
+  deskripsi: "",
+  logoUrl: "",
 };
 
 function bigintToDateStr(ts: bigint) {
@@ -165,6 +258,245 @@ export default function Admin() {
     });
     setContactLoaded(true);
   }
+
+  // ---- Program Unggulan state ----
+  const { data: programUnggulanData } = useProgramUnggulan();
+  const [programForm, setProgramForm] = useState({
+    judul: "",
+    deskripsi: "",
+    pesertaTerlatih: "",
+    programKegiatan: "",
+    penghargaan: "",
+    kecamatanTerlayani: "",
+  });
+  const [programLoaded, setProgramLoaded] = useState(false);
+
+  // Sync program form when data loads
+  if (programUnggulanData && !programLoaded) {
+    setProgramForm({
+      judul: programUnggulanData.judul,
+      deskripsi: programUnggulanData.deskripsi,
+      pesertaTerlatih: programUnggulanData.pesertaTerlatih,
+      programKegiatan: programUnggulanData.programKegiatan,
+      penghargaan: programUnggulanData.penghargaan,
+      kecamatanTerlayani: programUnggulanData.kecamatanTerlayani,
+    });
+    setProgramLoaded(true);
+  }
+
+  // ---- Videos state ----
+  const { data: videos = [], isLoading: videosLoading } = useAllVideos();
+  const [videoFormOpen, setVideoFormOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<VideoYoutube | null>(null);
+  const [videoForm, setVideoForm] = useState<VideoForm>(emptyVideoForm);
+  const [deleteVideoTarget, setDeleteVideoTarget] =
+    useState<VideoYoutube | null>(null);
+
+  // ---- Profile state ----
+  const { data: profileData } = useProfile();
+  const [profileForm, setProfileForm] = useState({
+    namaOrganisasi: "",
+    tagline: "",
+    deskripsi: "",
+    visi: "",
+    misi: "",
+  });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  if (profileData && !profileLoaded) {
+    setProfileForm({
+      namaOrganisasi: profileData.namaOrganisasi,
+      tagline: profileData.tagline,
+      deskripsi: profileData.deskripsi,
+      visi: profileData.visi,
+      misi: profileData.misi,
+    });
+    setProfileLoaded(true);
+  }
+
+  // ---- Galeri state ----
+  const { data: galeriItems = [], isLoading: galeriLoading } =
+    useAllGaleriItems();
+  const [galeriFormOpen, setGaleriFormOpen] = useState(false);
+  const [editingGaleri, setEditingGaleri] = useState<GaleriItem | null>(null);
+  const [galeriForm, setGaleriForm] = useState<GaleriForm>(emptyGaleriForm);
+  const [deleteGaleriTarget, setDeleteGaleriTarget] =
+    useState<GaleriItem | null>(null);
+
+  // ---- Pendaftaran state ----
+  const { data: pendaftaranList = [], isLoading: pendaftaranLoading } =
+    useAllPendaftaran();
+  const [deletePendaftaranTarget, setDeletePendaftaranTarget] =
+    useState<PendaftaranAnggota | null>(null);
+
+  // ---- Satuan SSK state ----
+  const { data: satuanList = [], isLoading: satuanLoading } = useAllSatuanSSK();
+  const [satuanFormOpen, setSatuanFormOpen] = useState(false);
+  const [editingSatuan, setEditingSatuan] = useState<SatuanSSK | null>(null);
+  const [satuanForm, setSatuanForm] = useState<SatuanForm>(emptySatuanForm);
+  const [deleteSatuanTarget, setDeleteSatuanTarget] =
+    useState<SatuanSSK | null>(null);
+
+  // ---- Site Settings state ----
+  const { data: siteSettingsData } = useSiteSettings();
+  const [logoUrl, setLogoUrl] = useState("");
+  const [siteSettingsLoaded, setSiteSettingsLoaded] = useState(false);
+  if (siteSettingsData && !siteSettingsLoaded) {
+    setLogoUrl(siteSettingsData.logoUrl);
+    setSiteSettingsLoaded(true);
+  }
+
+  // ---- Galeri mutations ----
+  const createGaleriMutation = useMutation({
+    mutationFn: async (data: GaleriForm) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.createGaleriItem(
+        data.title,
+        data.description,
+        data.mediaUrl,
+        data.mediaType,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["galeriItems"] });
+      toast.success("Item galeri berhasil ditambahkan");
+      setGaleriFormOpen(false);
+      setGaleriForm(emptyGaleriForm);
+    },
+    onError: () => toast.error("Gagal menambahkan item galeri"),
+  });
+
+  const updateGaleriMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: bigint; data: GaleriForm }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.updateGaleriItem(
+        id,
+        data.title,
+        data.description,
+        data.mediaUrl,
+        data.mediaType,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["galeriItems"] });
+      toast.success("Item galeri berhasil diperbarui");
+      setGaleriFormOpen(false);
+      setEditingGaleri(null);
+      setGaleriForm(emptyGaleriForm);
+    },
+    onError: () => toast.error("Gagal memperbarui item galeri"),
+  });
+
+  const deleteGaleriMutation = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.deleteGaleriItem(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["galeriItems"] });
+      toast.success("Item galeri berhasil dihapus");
+      setDeleteGaleriTarget(null);
+    },
+    onError: () => toast.error("Gagal menghapus item galeri"),
+  });
+
+  // ---- Pendaftaran mutations ----
+  const updatePendaftaranMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: bigint; status: string }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.updatePendaftaranStatus(id, status);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pendaftaran"] });
+      toast.success("Status pendaftaran diperbarui");
+    },
+    onError: () => toast.error("Gagal memperbarui status"),
+  });
+
+  const deletePendaftaranMutation = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.deletePendaftaran(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pendaftaran"] });
+      toast.success("Data pendaftaran dihapus");
+      setDeletePendaftaranTarget(null);
+    },
+    onError: () => toast.error("Gagal menghapus pendaftaran"),
+  });
+
+  // ---- Satuan SSK mutations ----
+  const createSatuanMutation = useMutation({
+    mutationFn: async (data: SatuanForm) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.createSatuanSSK(
+        data.nama,
+        data.alamat,
+        data.phone,
+        data.email,
+        data.deskripsi,
+        data.logoUrl,
+        data.ketua,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["satuanSSK"] });
+      toast.success("Satuan berhasil ditambahkan");
+      setSatuanFormOpen(false);
+      setSatuanForm(emptySatuanForm);
+    },
+    onError: () => toast.error("Gagal menambahkan satuan"),
+  });
+
+  const updateSatuanMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: bigint; data: SatuanForm }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.updateSatuanSSK(
+        id,
+        data.nama,
+        data.alamat,
+        data.phone,
+        data.email,
+        data.deskripsi,
+        data.logoUrl,
+        data.ketua,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["satuanSSK"] });
+      toast.success("Satuan berhasil diperbarui");
+      setSatuanFormOpen(false);
+      setEditingSatuan(null);
+      setSatuanForm(emptySatuanForm);
+    },
+    onError: () => toast.error("Gagal memperbarui satuan"),
+  });
+
+  const deleteSatuanMutation = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.deleteSatuanSSK(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["satuanSSK"] });
+      toast.success("Satuan berhasil dihapus");
+      setDeleteSatuanTarget(null);
+    },
+    onError: () => toast.error("Gagal menghapus satuan"),
+  });
+
+  // ---- Site Settings mutation ----
+  const updateSiteSettingsMutation = useMutation({
+    mutationFn: async (url: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.updateSiteSettings(url);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["siteSettings"] });
+      toast.success("Logo berhasil diperbarui");
+    },
+    onError: () => toast.error("Gagal memperbarui logo"),
+  });
 
   // ---- Article mutations ----
   const createArticleMutation = useMutation({
@@ -343,9 +675,103 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contactInfo"] });
+      setContactLoaded(false);
       toast.success("Informasi kontak berhasil diperbarui");
     },
     onError: () => toast.error("Gagal memperbarui informasi kontak"),
+  });
+
+  // ---- Program Unggulan mutation ----
+  const updateProgramMutation = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Actor not ready");
+      return actor.updateProgramUnggulan(
+        programForm.judul,
+        programForm.deskripsi,
+        programForm.pesertaTerlatih,
+        programForm.programKegiatan,
+        programForm.penghargaan,
+        programForm.kecamatanTerlayani,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programUnggulan"] });
+      setProgramLoaded(false);
+      toast.success("Program Unggulan berhasil diperbarui");
+    },
+    onError: () => toast.error("Gagal memperbarui Program Unggulan"),
+  });
+
+  // ---- Video mutations ----
+  const createVideoMutation = useMutation({
+    mutationFn: async (data: VideoForm) => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).createVideo(
+        data.title,
+        data.youtubeId,
+        data.description,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      setVideoFormOpen(false);
+      setVideoForm(emptyVideoForm);
+      toast.success("Video berhasil ditambahkan");
+    },
+    onError: () => toast.error("Gagal menambahkan video"),
+  });
+
+  const updateVideoMutation = useMutation({
+    mutationFn: async (data: VideoForm) => {
+      if (!actor || !editingVideo) throw new Error("Actor not ready");
+      return (actor as any).updateVideo(
+        editingVideo.id,
+        data.title,
+        data.youtubeId,
+        data.description,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      setVideoFormOpen(false);
+      setEditingVideo(null);
+      setVideoForm(emptyVideoForm);
+      toast.success("Video berhasil diperbarui");
+    },
+    onError: () => toast.error("Gagal memperbarui video"),
+  });
+
+  const deleteVideoMutation = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).deleteVideo(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      setDeleteVideoTarget(null);
+      toast.success("Video berhasil dihapus");
+    },
+    onError: () => toast.error("Gagal menghapus video"),
+  });
+
+  // ---- Profile mutation ----
+  const updateProfileMutation = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).updateProfile(
+        profileForm.namaOrganisasi,
+        profileForm.tagline,
+        profileForm.deskripsi,
+        profileForm.visi,
+        profileForm.misi,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      setProfileLoaded(false);
+      toast.success("Profil berhasil diperbarui");
+    },
+    onError: () => toast.error("Gagal memperbarui profil"),
   });
 
   return (
@@ -460,6 +886,55 @@ export default function Admin() {
                 data-ocid="admin.kontak.tab"
               >
                 Kontak
+              </TabsTrigger>
+              <TabsTrigger
+                value="program-unggulan"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.program_unggulan.tab"
+              >
+                Program Unggulan
+              </TabsTrigger>
+              <TabsTrigger
+                value="video-youtube"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.video.tab"
+              >
+                Video YouTube
+              </TabsTrigger>
+              <TabsTrigger
+                value="profile"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.profile.tab"
+              >
+                Profil
+              </TabsTrigger>
+              <TabsTrigger
+                value="galeri"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.galeri.tab"
+              >
+                Galeri Kegiatan
+              </TabsTrigger>
+              <TabsTrigger
+                value="pendaftaran"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.pendaftaran.tab"
+              >
+                Pendaftaran
+              </TabsTrigger>
+              <TabsTrigger
+                value="satuan"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.satuan.tab"
+              >
+                Satuan SSK
+              </TabsTrigger>
+              <TabsTrigger
+                value="pengaturan-logo"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.logo.tab"
+              >
+                Pengaturan Logo
               </TabsTrigger>
             </TabsList>
 
@@ -949,6 +1424,888 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* ---- PROGRAM UNGGULAN TAB ---- */}
+            <TabsContent value="program-unggulan" className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-navy">
+                  Program Unggulan
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Perbarui data Program Unggulan yang ditampilkan di halaman
+                  utama
+                </p>
+              </div>
+              <Card className="shadow-sm border-0 max-w-2xl">
+                <CardHeader>
+                  <CardTitle className="text-navy text-lg">
+                    Edit Program Unggulan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="space-y-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      updateProgramMutation.mutate();
+                    }}
+                  >
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="program-judul"
+                        className="text-navy font-medium"
+                      >
+                        Judul
+                      </Label>
+                      <input
+                        id="program-judul"
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={programForm.judul}
+                        onChange={(e) =>
+                          setProgramForm((prev) => ({
+                            ...prev,
+                            judul: e.target.value,
+                          }))
+                        }
+                        placeholder="Program Unggulan SSK Kabupaten Subang"
+                        data-ocid="admin.program_unggulan.judul.input"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="program-deskripsi"
+                        className="text-navy font-medium"
+                      >
+                        Deskripsi
+                      </Label>
+                      <Textarea
+                        id="program-deskripsi"
+                        value={programForm.deskripsi}
+                        onChange={(e) =>
+                          setProgramForm((prev) => ({
+                            ...prev,
+                            deskripsi: e.target.value,
+                          }))
+                        }
+                        placeholder="Deskripsi program unggulan..."
+                        rows={3}
+                        data-ocid="admin.program_unggulan.deskripsi.textarea"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-peserta"
+                          className="text-navy font-medium"
+                        >
+                          Peserta Terlatih
+                        </Label>
+                        <input
+                          id="program-peserta"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={programForm.pesertaTerlatih}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              pesertaTerlatih: e.target.value,
+                            }))
+                          }
+                          placeholder="1.000+"
+                          data-ocid="admin.program_unggulan.peserta.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-kegiatan"
+                          className="text-navy font-medium"
+                        >
+                          Program Kegiatan
+                        </Label>
+                        <input
+                          id="program-kegiatan"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={programForm.programKegiatan}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              programKegiatan: e.target.value,
+                            }))
+                          }
+                          placeholder="15+"
+                          data-ocid="admin.program_unggulan.kegiatan.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-penghargaan"
+                          className="text-navy font-medium"
+                        >
+                          Penghargaan
+                        </Label>
+                        <input
+                          id="program-penghargaan"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={programForm.penghargaan}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              penghargaan: e.target.value,
+                            }))
+                          }
+                          placeholder="5+"
+                          data-ocid="admin.program_unggulan.penghargaan.input"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="program-kecamatan"
+                          className="text-navy font-medium"
+                        >
+                          Kecamatan Terlayani
+                        </Label>
+                        <input
+                          id="program-kecamatan"
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={programForm.kecamatanTerlayani}
+                          onChange={(e) =>
+                            setProgramForm((prev) => ({
+                              ...prev,
+                              kecamatanTerlayani: e.target.value,
+                            }))
+                          }
+                          placeholder="30+"
+                          data-ocid="admin.program_unggulan.kecamatan.input"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="bg-navy hover:bg-navy-light text-white w-full mt-2"
+                      disabled={updateProgramMutation.isPending}
+                      data-ocid="admin.program_unggulan.save_button"
+                    >
+                      {updateProgramMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        "Simpan Perubahan"
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- VIDEO YOUTUBE TAB ---- */}
+            <TabsContent value="video-youtube" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Video YouTube
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {videos.length} video terdaftar
+                  </p>
+                </div>
+                <Button
+                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                  onClick={() => {
+                    setEditingVideo(null);
+                    setVideoForm(emptyVideoForm);
+                    setVideoFormOpen(true);
+                  }}
+                  data-ocid="admin.video.primary_button"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Tambah Video
+                </Button>
+              </div>
+              <Card className="shadow-sm border-0">
+                <CardContent className="p-0">
+                  {videosLoading ? (
+                    <div
+                      className="flex items-center justify-center py-20"
+                      data-ocid="admin.video.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                    </div>
+                  ) : videos.length === 0 ? (
+                    <div
+                      className="text-center py-20 text-gray-400"
+                      data-ocid="admin.video.empty_state"
+                    >
+                      <p className="font-medium">Belum ada video</p>
+                    </div>
+                  ) : (
+                    <Table data-ocid="admin.video.table">
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-navy">
+                            Judul
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            YouTube ID
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Deskripsi
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy text-right">
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {videos.map((video, i) => (
+                          <TableRow
+                            key={video.id.toString()}
+                            data-ocid={`admin.video.item.${i + 1}`}
+                          >
+                            <TableCell>
+                              <p className="font-medium text-gray-900">
+                                {video.title}
+                              </p>
+                            </TableCell>
+                            <TableCell className="text-sm text-blue-600">
+                              <a
+                                href={`https://youtube.com/watch?v=${video.youtubeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                {video.youtubeId}
+                              </a>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600 max-w-xs line-clamp-2">
+                              {video.description}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-navy hover:bg-navy/10"
+                                  onClick={() => {
+                                    setEditingVideo(video);
+                                    setVideoForm({
+                                      title: video.title,
+                                      youtubeId: video.youtubeId,
+                                      description: video.description,
+                                    });
+                                    setVideoFormOpen(true);
+                                  }}
+                                  data-ocid={`admin.video.edit_button.${i + 1}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:bg-red-50"
+                                  onClick={() => setDeleteVideoTarget(video)}
+                                  data-ocid={`admin.video.delete_button.${i + 1}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- PROFILE TAB ---- */}
+            <TabsContent value="profile" className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-navy">
+                  Profil Organisasi
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Edit informasi profil organisasi SSK Kabupaten Subang
+                </p>
+              </div>
+              <Card className="shadow-sm border-0">
+                <CardHeader className="border-b">
+                  <CardTitle className="text-navy text-lg">
+                    Informasi Profil
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      updateProfileMutation.mutate();
+                    }}
+                    className="space-y-5"
+                  >
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="namaOrganisasi"
+                        className="text-navy font-medium"
+                      >
+                        Nama Organisasi
+                      </Label>
+                      <Input
+                        id="namaOrganisasi"
+                        value={profileForm.namaOrganisasi}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            namaOrganisasi: e.target.value,
+                          }))
+                        }
+                        placeholder="Nama organisasi"
+                        data-ocid="admin.profile.input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="tagline"
+                        className="text-navy font-medium"
+                      >
+                        Tagline / Slogan
+                      </Label>
+                      <Input
+                        id="tagline"
+                        value={profileForm.tagline}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            tagline: e.target.value,
+                          }))
+                        }
+                        placeholder="Tagline atau slogan organisasi"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="deskripsi"
+                        className="text-navy font-medium"
+                      >
+                        Deskripsi Singkat
+                      </Label>
+                      <Input
+                        id="deskripsi"
+                        value={profileForm.deskripsi}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            deskripsi: e.target.value,
+                          }))
+                        }
+                        placeholder="Deskripsi singkat organisasi"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="visi" className="text-navy font-medium">
+                        Visi
+                      </Label>
+                      <Textarea
+                        id="visi"
+                        rows={3}
+                        value={profileForm.visi}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            visi: e.target.value,
+                          }))
+                        }
+                        placeholder="Visi organisasi"
+                        data-ocid="admin.profile.textarea"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="misi" className="text-navy font-medium">
+                        Misi
+                      </Label>
+                      <Textarea
+                        id="misi"
+                        rows={3}
+                        value={profileForm.misi}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            misi: e.target.value,
+                          }))
+                        }
+                        placeholder="Misi organisasi"
+                      />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="submit"
+                        className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                        disabled={updateProfileMutation.isPending}
+                        data-ocid="admin.profile.submit_button"
+                      >
+                        {updateProfileMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                            Menyimpan…
+                          </>
+                        ) : (
+                          "Simpan Perubahan"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- GALERI TAB ---- */}
+            <TabsContent value="galeri" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Galeri Kegiatan
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {galeriItems.length} item tersedia
+                  </p>
+                </div>
+                <Button
+                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                  onClick={() => {
+                    setEditingGaleri(null);
+                    setGaleriForm(emptyGaleriForm);
+                    setGaleriFormOpen(true);
+                  }}
+                  data-ocid="admin.galeri.primary_button"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Tambah Item
+                </Button>
+              </div>
+              <Card className="shadow-sm border-0">
+                <CardContent className="p-0">
+                  {galeriLoading ? (
+                    <div
+                      className="flex items-center justify-center py-20"
+                      data-ocid="admin.galeri.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                    </div>
+                  ) : galeriItems.length === 0 ? (
+                    <div
+                      className="text-center py-20 text-gray-400"
+                      data-ocid="admin.galeri.empty_state"
+                    >
+                      <p className="font-medium">Belum ada item galeri</p>
+                    </div>
+                  ) : (
+                    <Table data-ocid="admin.galeri.table">
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-navy">
+                            Judul
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Tipe
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Tanggal
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy text-right">
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {galeriItems.map((item, i) => (
+                          <TableRow
+                            key={item.id.toString()}
+                            data-ocid={`admin.galeri.item.${i + 1}`}
+                          >
+                            <TableCell>
+                              <p className="font-medium text-gray-900 line-clamp-1">
+                                {item.title}
+                              </p>
+                              <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
+                                {item.description}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className="bg-navy/10 text-navy text-xs"
+                              >
+                                {item.mediaType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
+                              {formatDate(item.tanggal)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-navy hover:bg-navy/10"
+                                  onClick={() => {
+                                    setEditingGaleri(item);
+                                    setGaleriForm({
+                                      title: item.title,
+                                      description: item.description,
+                                      mediaType: item.mediaType,
+                                      mediaUrl: item.mediaUrl,
+                                    });
+                                    setGaleriFormOpen(true);
+                                  }}
+                                  data-ocid={`admin.galeri.edit_button.${i + 1}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:bg-red-50"
+                                  onClick={() => setDeleteGaleriTarget(item)}
+                                  data-ocid={`admin.galeri.delete_button.${i + 1}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- PENDAFTARAN TAB ---- */}
+            <TabsContent value="pendaftaran" className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-navy">
+                  Pendaftaran Anggota
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  {pendaftaranList.length} pendaftar
+                </p>
+              </div>
+              <Card className="shadow-sm border-0">
+                <CardContent className="p-0">
+                  {pendaftaranLoading ? (
+                    <div
+                      className="flex items-center justify-center py-20"
+                      data-ocid="admin.pendaftaran.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                    </div>
+                  ) : pendaftaranList.length === 0 ? (
+                    <div
+                      className="text-center py-20 text-gray-400"
+                      data-ocid="admin.pendaftaran.empty_state"
+                    >
+                      <p className="font-medium">Belum ada pendaftaran</p>
+                    </div>
+                  ) : (
+                    <Table data-ocid="admin.pendaftaran.table">
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-navy">
+                            Nama
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            NIK
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Email / HP
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Pekerjaan
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Tanggal
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Status
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy text-right">
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendaftaranList.map((p, i) => (
+                          <TableRow
+                            key={p.id.toString()}
+                            data-ocid={`admin.pendaftaran.item.${i + 1}`}
+                          >
+                            <TableCell>
+                              <p className="font-medium text-gray-900">
+                                {p.nama}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {p.alamat}
+                              </p>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
+                              {p.nik}
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm text-gray-700">{p.email}</p>
+                              <p className="text-xs text-gray-400">{p.phone}</p>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
+                              {p.pekerjaan}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
+                              {formatDate(p.tanggalDaftar)}
+                            </TableCell>
+                            <TableCell>
+                              <select
+                                value={p.status}
+                                onChange={(e) =>
+                                  updatePendaftaranMutation.mutate({
+                                    id: p.id,
+                                    status: e.target.value,
+                                  })
+                                }
+                                className={`text-xs font-semibold px-2 py-1 rounded border-0 outline-none cursor-pointer ${
+                                  p.status === "Diterima"
+                                    ? "bg-green-100 text-green-700"
+                                    : p.status === "Ditolak"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-yellow-100 text-yellow-700"
+                                }`}
+                                data-ocid={`admin.pendaftaran.select.${i + 1}`}
+                              >
+                                <option value="Menunggu">Menunggu</option>
+                                <option value="Diterima">Diterima</option>
+                                <option value="Ditolak">Ditolak</option>
+                              </select>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:bg-red-50"
+                                onClick={() => setDeletePendaftaranTarget(p)}
+                                data-ocid={`admin.pendaftaran.delete_button.${i + 1}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- SATUAN SSK TAB ---- */}
+            <TabsContent value="satuan" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">Satuan SSK</h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {satuanList.length} satuan terdaftar
+                  </p>
+                </div>
+                <Button
+                  className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                  onClick={() => {
+                    setEditingSatuan(null);
+                    setSatuanForm(emptySatuanForm);
+                    setSatuanFormOpen(true);
+                  }}
+                  data-ocid="admin.satuan.primary_button"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Tambah Satuan
+                </Button>
+              </div>
+              <Card className="shadow-sm border-0">
+                <CardContent className="p-0">
+                  {satuanLoading ? (
+                    <div
+                      className="flex items-center justify-center py-20"
+                      data-ocid="admin.satuan.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 animate-spin text-navy" />
+                    </div>
+                  ) : satuanList.length === 0 ? (
+                    <div
+                      className="text-center py-20 text-gray-400"
+                      data-ocid="admin.satuan.empty_state"
+                    >
+                      <p className="font-medium">Belum ada satuan terdaftar</p>
+                    </div>
+                  ) : (
+                    <Table data-ocid="admin.satuan.table">
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-navy">
+                            Nama Satuan
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Ketua
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy">
+                            Kontak
+                          </TableHead>
+                          <TableHead className="font-semibold text-navy text-right">
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {satuanList.map((s, i) => (
+                          <TableRow
+                            key={s.id.toString()}
+                            data-ocid={`admin.satuan.item.${i + 1}`}
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {s.logoUrl && (
+                                  <img
+                                    src={s.logoUrl}
+                                    alt={s.nama}
+                                    className="w-8 h-8 rounded-full object-contain border"
+                                  />
+                                )}
+                                <div>
+                                  <p className="font-medium text-gray-900">
+                                    {s.nama}
+                                  </p>
+                                  <p className="text-xs text-gray-400 line-clamp-1">
+                                    {s.deskripsi}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-700">
+                              {s.ketua}
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm text-gray-700">{s.phone}</p>
+                              <p className="text-xs text-gray-400">{s.email}</p>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-navy hover:bg-navy/10"
+                                  onClick={() => {
+                                    setEditingSatuan(s);
+                                    setSatuanForm({
+                                      nama: s.nama,
+                                      ketua: s.ketua,
+                                      alamat: s.alamat,
+                                      phone: s.phone,
+                                      email: s.email,
+                                      deskripsi: s.deskripsi,
+                                      logoUrl: s.logoUrl,
+                                    });
+                                    setSatuanFormOpen(true);
+                                  }}
+                                  data-ocid={`admin.satuan.edit_button.${i + 1}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:bg-red-50"
+                                  onClick={() => setDeleteSatuanTarget(s)}
+                                  data-ocid={`admin.satuan.delete_button.${i + 1}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ---- PENGATURAN LOGO TAB ---- */}
+            <TabsContent value="pengaturan-logo" className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-navy">
+                  Pengaturan Logo
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Ubah logo yang tampil di header dan footer website
+                </p>
+              </div>
+              <Card className="shadow-sm border-0 max-w-lg">
+                <CardHeader>
+                  <CardTitle className="text-navy text-lg">
+                    Logo Website
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {logoUrl && (
+                    <div className="flex items-center justify-center p-4 bg-navy/5 rounded-lg">
+                      <img
+                        src={logoUrl}
+                        alt="Logo preview"
+                        className="max-h-24 max-w-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-navy font-semibold">
+                      Upload Logo dari Galeri
+                    </Label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
+                      data-ocid="admin.logo.upload_button"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const base64 = await compressImageToBase64(file);
+                          setLogoUrl(base64);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-navy font-semibold">
+                      Atau Masukkan URL Logo
+                    </Label>
+                    <Input
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                      placeholder="https://example.com/logo.png"
+                      className="border-gray-300"
+                      data-ocid="admin.logo.input"
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold"
+                    onClick={() => updateSiteSettingsMutation.mutate(logoUrl)}
+                    disabled={updateSiteSettingsMutation.isPending}
+                    data-ocid="admin.logo.save_button"
+                  >
+                    {updateSiteSettingsMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Menyimpan...
+                      </>
+                    ) : (
+                      "Simpan Logo"
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
       </div>
@@ -1045,15 +2402,27 @@ export default function Admin() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="art-image" className="text-navy font-medium">
-                URL Gambar
+                Foto/Gambar
               </Label>
-              <Input
+              {articleForm.imageUrl && (
+                <img
+                  src={articleForm.imageUrl}
+                  alt="Preview"
+                  className="w-full h-32 object-cover rounded-md mb-2"
+                />
+              )}
+              <input
+                type="file"
                 id="art-image"
-                value={articleForm.imageUrl}
-                onChange={(e) =>
-                  setArticleForm((p) => ({ ...p, imageUrl: e.target.value }))
-                }
-                placeholder="https://..."
+                accept="image/*"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-navy file:text-white hover:file:bg-navy/90 cursor-pointer"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const base64 = await compressImageToBase64(file);
+                    setArticleForm((p) => ({ ...p, imageUrl: base64 }));
+                  }
+                }}
                 data-ocid="admin.article.imageurl.input"
               />
             </div>
@@ -1212,15 +2581,27 @@ export default function Admin() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="team-image" className="text-navy font-medium">
-                URL Foto
+                Foto Anggota
               </Label>
-              <Input
+              {teamForm.imageUrl && (
+                <img
+                  src={teamForm.imageUrl}
+                  alt="Preview"
+                  className="w-full h-32 object-cover rounded-md mb-2"
+                />
+              )}
+              <input
+                type="file"
                 id="team-image"
-                value={teamForm.imageUrl}
-                onChange={(e) =>
-                  setTeamForm((p) => ({ ...p, imageUrl: e.target.value }))
-                }
-                placeholder="https://..."
+                accept="image/*"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-navy file:text-white hover:file:bg-navy/90 cursor-pointer"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const base64 = await compressImageToBase64(file);
+                    setTeamForm((p) => ({ ...p, imageUrl: base64 }));
+                  }
+                }}
                 data-ocid="admin.anggota.imageurl.input"
               />
             </div>
@@ -1466,6 +2847,624 @@ export default function Admin() {
               data-ocid="admin.kegiatan.delete.confirm_button"
             >
               {deleteActivityMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menghapus…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Form Dialog */}
+      <Dialog open={videoFormOpen} onOpenChange={setVideoFormOpen}>
+        <DialogContent className="max-w-lg" data-ocid="admin.video.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-navy">
+              {editingVideo ? "Edit Video" : "Tambah Video YouTube"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingVideo
+                ? "Perbarui informasi video"
+                : "Tambah video YouTube baru"}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editingVideo) updateVideoMutation.mutate(videoForm);
+              else createVideoMutation.mutate(videoForm);
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="videoTitle" className="text-navy font-medium">
+                Judul
+              </Label>
+              <Input
+                id="videoTitle"
+                value={videoForm.title}
+                onChange={(e) =>
+                  setVideoForm((p) => ({ ...p, title: e.target.value }))
+                }
+                placeholder="Judul video"
+                required
+                data-ocid="admin.video.input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="youtubeId" className="text-navy font-medium">
+                YouTube ID
+              </Label>
+              <Input
+                id="youtubeId"
+                value={videoForm.youtubeId}
+                onChange={(e) =>
+                  setVideoForm((p) => ({ ...p, youtubeId: e.target.value }))
+                }
+                placeholder="dQw4w9WgXcW"
+                required
+              />
+              <p className="text-xs text-gray-400">
+                Contoh: dQw4w9WgXcW dari URL youtube.com/watch?v=dQw4w9WgXcW
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="videoDesc" className="text-navy font-medium">
+                Deskripsi
+              </Label>
+              <Textarea
+                id="videoDesc"
+                rows={3}
+                value={videoForm.description}
+                onChange={(e) =>
+                  setVideoForm((p) => ({ ...p, description: e.target.value }))
+                }
+                placeholder="Deskripsi video"
+                data-ocid="admin.video.textarea"
+              />
+            </div>
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVideoFormOpen(false)}
+                data-ocid="admin.video.cancel_button"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                disabled={
+                  createVideoMutation.isPending || updateVideoMutation.isPending
+                }
+                data-ocid="admin.video.submit_button"
+              >
+                {createVideoMutation.isPending ||
+                updateVideoMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan…
+                  </>
+                ) : editingVideo ? (
+                  "Perbarui"
+                ) : (
+                  "Simpan"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Video Dialog */}
+      <Dialog
+        open={!!deleteVideoTarget}
+        onOpenChange={(open) => !open && setDeleteVideoTarget(null)}
+      >
+        <DialogContent data-ocid="admin.video.delete.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Hapus Video</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus video &ldquo;
+              <strong>{deleteVideoTarget?.title}</strong>&rdquo;?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteVideoTarget(null)}
+              data-ocid="admin.video.delete.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteVideoTarget &&
+                deleteVideoMutation.mutate(deleteVideoTarget.id)
+              }
+              disabled={deleteVideoMutation.isPending}
+              data-ocid="admin.video.delete.confirm_button"
+            >
+              {deleteVideoMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menghapus…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Galeri Form Dialog */}
+      <Dialog open={galeriFormOpen} onOpenChange={setGaleriFormOpen}>
+        <DialogContent className="max-w-lg" data-ocid="admin.galeri.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-navy">
+              {editingGaleri ? "Edit Item Galeri" : "Tambah Item Galeri"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingGaleri
+                ? "Perbarui item galeri."
+                : "Tambahkan foto atau video ke galeri."}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (editingGaleri) {
+                updateGaleriMutation.mutate({
+                  id: editingGaleri.id,
+                  data: galeriForm,
+                });
+              } else {
+                createGaleriMutation.mutate(galeriForm);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Judul</Label>
+              <Input
+                required
+                value={galeriForm.title}
+                onChange={(e) =>
+                  setGaleriForm((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Judul foto/video"
+                data-ocid="admin.galeri.title.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Deskripsi</Label>
+              <Textarea
+                value={galeriForm.description}
+                onChange={(e) =>
+                  setGaleriForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Deskripsi singkat"
+                rows={2}
+                data-ocid="admin.galeri.desc.textarea"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Tipe Media</Label>
+              <select
+                value={galeriForm.mediaType}
+                onChange={(e) =>
+                  setGaleriForm((prev) => ({
+                    ...prev,
+                    mediaType: e.target.value,
+                  }))
+                }
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-navy"
+                data-ocid="admin.galeri.mediatype.select"
+              >
+                <option value="foto">Foto</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+            {galeriForm.mediaType === "foto" ? (
+              <div className="space-y-1.5">
+                <Label className="text-navy font-semibold">Upload Foto</Label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
+                  data-ocid="admin.galeri.foto.upload_button"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const base64 = await compressImageToBase64(file);
+                      setGaleriForm((prev) => ({ ...prev, mediaUrl: base64 }));
+                    }
+                  }}
+                />
+                {galeriForm.mediaUrl && (
+                  <img
+                    src={galeriForm.mediaUrl}
+                    alt="Preview"
+                    className="mt-2 max-h-32 rounded object-cover"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-navy font-semibold">
+                  YouTube ID atau URL
+                </Label>
+                <Input
+                  value={galeriForm.mediaUrl}
+                  onChange={(e) =>
+                    setGaleriForm((prev) => ({
+                      ...prev,
+                      mediaUrl: e.target.value,
+                    }))
+                  }
+                  placeholder="dQw4w9WgXcQ atau https://youtu.be/..."
+                  data-ocid="admin.galeri.video.input"
+                />
+              </div>
+            )}
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setGaleriFormOpen(false);
+                  setEditingGaleri(null);
+                  setGaleriForm(emptyGaleriForm);
+                }}
+                data-ocid="admin.galeri.cancel_button"
+              >
+                <X className="w-4 h-4 mr-1" /> Batal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                disabled={
+                  createGaleriMutation.isPending ||
+                  updateGaleriMutation.isPending
+                }
+                data-ocid="admin.galeri.submit_button"
+              >
+                {createGaleriMutation.isPending ||
+                updateGaleriMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                    Menyimpan...
+                  </>
+                ) : editingGaleri ? (
+                  "Perbarui"
+                ) : (
+                  "Simpan"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Galeri Dialog */}
+      <Dialog
+        open={!!deleteGaleriTarget}
+        onOpenChange={(open) => !open && setDeleteGaleriTarget(null)}
+      >
+        <DialogContent data-ocid="admin.galeri.delete.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">
+              Hapus Item Galeri
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus item &ldquo;
+              <strong>{deleteGaleriTarget?.title}</strong>&rdquo;?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteGaleriTarget(null)}
+              data-ocid="admin.galeri.delete.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteGaleriTarget &&
+                deleteGaleriMutation.mutate(deleteGaleriTarget.id)
+              }
+              disabled={deleteGaleriMutation.isPending}
+              data-ocid="admin.galeri.delete.confirm_button"
+            >
+              {deleteGaleriMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menghapus…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Pendaftaran Dialog */}
+      <Dialog
+        open={!!deletePendaftaranTarget}
+        onOpenChange={(open) => !open && setDeletePendaftaranTarget(null)}
+      >
+        <DialogContent data-ocid="admin.pendaftaran.delete.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">
+              Hapus Pendaftaran
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus pendaftaran atas nama &ldquo;
+              <strong>{deletePendaftaranTarget?.nama}</strong>&rdquo;?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeletePendaftaranTarget(null)}
+              data-ocid="admin.pendaftaran.delete.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deletePendaftaranTarget &&
+                deletePendaftaranMutation.mutate(deletePendaftaranTarget.id)
+              }
+              disabled={deletePendaftaranMutation.isPending}
+              data-ocid="admin.pendaftaran.delete.confirm_button"
+            >
+              {deletePendaftaranMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menghapus…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Satuan Form Dialog */}
+      <Dialog open={satuanFormOpen} onOpenChange={setSatuanFormOpen}>
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          data-ocid="admin.satuan.dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-navy">
+              {editingSatuan ? "Edit Satuan SSK" : "Tambah Satuan SSK"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingSatuan
+                ? "Perbarui data satuan."
+                : "Isi data satuan SSK baru."}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editingSatuan) {
+                updateSatuanMutation.mutate({
+                  id: editingSatuan.id,
+                  data: satuanForm,
+                });
+              } else {
+                createSatuanMutation.mutate(satuanForm);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Nama Satuan *</Label>
+              <Input
+                required
+                value={satuanForm.nama}
+                onChange={(e) =>
+                  setSatuanForm((prev) => ({ ...prev, nama: e.target.value }))
+                }
+                placeholder="Nama satuan SSK"
+                data-ocid="admin.satuan.nama.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Nama Ketua</Label>
+              <Input
+                value={satuanForm.ketua}
+                onChange={(e) =>
+                  setSatuanForm((prev) => ({ ...prev, ketua: e.target.value }))
+                }
+                placeholder="Nama ketua satuan"
+                data-ocid="admin.satuan.ketua.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Alamat</Label>
+              <Textarea
+                value={satuanForm.alamat}
+                onChange={(e) =>
+                  setSatuanForm((prev) => ({ ...prev, alamat: e.target.value }))
+                }
+                placeholder="Alamat satuan"
+                rows={2}
+                data-ocid="admin.satuan.alamat.textarea"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-navy font-semibold">No. Telepon</Label>
+                <Input
+                  value={satuanForm.phone}
+                  onChange={(e) =>
+                    setSatuanForm((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  placeholder="08xx"
+                  data-ocid="admin.satuan.phone.input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-navy font-semibold">Email</Label>
+                <Input
+                  type="email"
+                  value={satuanForm.email}
+                  onChange={(e) =>
+                    setSatuanForm((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  placeholder="email@satuan.id"
+                  data-ocid="admin.satuan.email.input"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Deskripsi</Label>
+              <Textarea
+                value={satuanForm.deskripsi}
+                onChange={(e) =>
+                  setSatuanForm((prev) => ({
+                    ...prev,
+                    deskripsi: e.target.value,
+                  }))
+                }
+                placeholder="Deskripsi satuan"
+                rows={3}
+                data-ocid="admin.satuan.deskripsi.textarea"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Logo Satuan</Label>
+              <input
+                type="file"
+                accept="image/*"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
+                data-ocid="admin.satuan.logo.upload_button"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const base64 = await compressImageToBase64(file);
+                    setSatuanForm((prev) => ({ ...prev, logoUrl: base64 }));
+                  }
+                }}
+              />
+              {satuanForm.logoUrl && (
+                <img
+                  src={satuanForm.logoUrl}
+                  alt="Logo preview"
+                  className="mt-2 w-16 h-16 rounded-full object-contain border"
+                />
+              )}
+              <Input
+                value={satuanForm.logoUrl}
+                onChange={(e) =>
+                  setSatuanForm((prev) => ({
+                    ...prev,
+                    logoUrl: e.target.value,
+                  }))
+                }
+                placeholder="Atau masukkan URL logo"
+                className="mt-2"
+                data-ocid="admin.satuan.logourl.input"
+              />
+            </div>
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSatuanFormOpen(false);
+                  setEditingSatuan(null);
+                  setSatuanForm(emptySatuanForm);
+                }}
+                data-ocid="admin.satuan.cancel_button"
+              >
+                <X className="w-4 h-4 mr-1" /> Batal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+                disabled={
+                  createSatuanMutation.isPending ||
+                  updateSatuanMutation.isPending
+                }
+                data-ocid="admin.satuan.submit_button"
+              >
+                {createSatuanMutation.isPending ||
+                updateSatuanMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                    Menyimpan...
+                  </>
+                ) : editingSatuan ? (
+                  "Perbarui"
+                ) : (
+                  "Simpan"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Satuan Dialog */}
+      <Dialog
+        open={!!deleteSatuanTarget}
+        onOpenChange={(open) => !open && setDeleteSatuanTarget(null)}
+      >
+        <DialogContent data-ocid="admin.satuan.delete.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Hapus Satuan</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus satuan &ldquo;
+              <strong>{deleteSatuanTarget?.nama}</strong>&rdquo;?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteSatuanTarget(null)}
+              data-ocid="admin.satuan.delete.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteSatuanTarget &&
+                deleteSatuanMutation.mutate(deleteSatuanTarget.id)
+              }
+              disabled={deleteSatuanMutation.isPending}
+              data-ocid="admin.satuan.delete.confirm_button"
+            >
+              {deleteSatuanMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menghapus…
                 </>

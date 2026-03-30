@@ -2,14 +2,11 @@ import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Map "mo:core/Map";
-import List "mo:core/List";
-import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Migration "migration";
 
 (with migration = Migration.run)
 actor {
-  // Types
   type Article = {
     id : Nat;
     title : Text;
@@ -43,38 +40,167 @@ actor {
     operationalHours : Text;
   };
 
-  // Storage
-  let articles = Map.empty<Nat, Article>();
-  var nextArticleId = 0;
+  type ProgramUnggulan = {
+    judul : Text;
+    deskripsi : Text;
+    pesertaTerlatih : Text;
+    programKegiatan : Text;
+    penghargaan : Text;
+    kecamatanTerlayani : Text;
+  };
 
-  let teamMembers = Map.empty<Nat, TeamMember>();
-  var nextTeamMemberId = 3;
+  type VideoYoutube = {
+    id : Nat;
+    title : Text;
+    youtubeId : Text;
+    description : Text;
+  };
 
-  let activities = Map.empty<Nat, Activity>();
-  var nextActivityId = 3;
+  type Profile = {
+    namaOrganisasi : Text;
+    tagline : Text;
+    deskripsi : Text;
+    visi : Text;
+    misi : Text;
+  };
 
-  var contactInfo : ContactInfo = {
+  // New types for additional features
+  type GaleriItem = {
+    id : Nat;
+    title : Text;
+    description : Text;
+    mediaUrl : Text;
+    mediaType : Text;
+    tanggal : Time.Time;
+  };
+
+  type PendaftaranAnggota = {
+    id : Nat;
+    nama : Text;
+    nik : Text;
+    alamat : Text;
+    phone : Text;
+    email : Text;
+    pekerjaan : Text;
+    alasan : Text;
+    tanggalDaftar : Time.Time;
+    status : Text;
+  };
+
+  type SatuanSSK = {
+    id : Nat;
+    nama : Text;
+    alamat : Text;
+    phone : Text;
+    email : Text;
+    deskripsi : Text;
+    logoUrl : Text;
+    ketua : Text;
+  };
+
+  type SiteSettings = {
+    logoUrl : Text;
+  };
+
+  // Stable storage - persists across upgrades
+  stable var stableArticles : [(Nat, Article)] = [];
+  stable var stableTeamMembers : [(Nat, TeamMember)] = [];
+  stable var stableActivities : [(Nat, Activity)] = [];
+  stable var stableVideos : [(Nat, VideoYoutube)] = [];
+  stable var stableNextArticleId : Nat = 0;
+  stable var stableNextTeamMemberId : Nat = 3;
+  stable var stableNextActivityId : Nat = 3;
+  stable var stableNextVideoId : Nat = 0;
+  stable var stableContactInfo : ContactInfo = {
     address = "Jl. Brigjen Katamso No. 1, Subang, Jawa Barat 41211";
     phone = "(0260) 411-1234";
     email = "info@ssk-subang.go.id";
-    operationalHours = "Senin – Jumat, 08.00 – 16.00 WIB";
+    operationalHours = "Senin - Jumat, 08.00 - 16.00 WIB";
+  };
+  stable var stableProgramUnggulan : ProgramUnggulan = {
+    judul = "Program Unggulan SSK Kabupaten Subang";
+    deskripsi = "Edukasi Kependudukan yang Inovatif dan Berkelanjutan memberikan dampak nyata bagi masyarakat Kabupaten Subang melalui program terstruktur dan terukur.";
+    pesertaTerlatih = "1.000+";
+    programKegiatan = "15+";
+    penghargaan = "5+";
+    kecamatanTerlayani = "30+";
+  };
+  stable var stableProfile : Profile = {
+    namaOrganisasi = "SSK Kabupaten Subang";
+    tagline = "Edukasi Kependudukan yang Inovatif dan Berkelanjutan";
+    deskripsi = "Satuan Tugas Stunting Kabupaten Subang berkomitmen untuk meningkatkan kualitas sumber daya manusia melalui program edukasi kependudukan yang berkelanjutan.";
+    visi = "Terwujudnya Kabupaten Subang yang sejahtera melalui pengendalian penduduk dan pembangunan keluarga berkualitas.";
+    misi = "Meningkatkan pemahaman masyarakat tentang kependudukan; Memperkuat program keluarga berencana; Meningkatkan kualitas data kependudukan.";
+  };
+
+  stable var stableGaleriItems : [(Nat, GaleriItem)] = [];
+  stable var stablePendaftaranAnggota : [(Nat, PendaftaranAnggota)] = [];
+  stable var stableSatuanSSK : [(Nat, SatuanSSK)] = [];
+  stable var stableNextGaleriItemId : Nat = 0;
+  stable var stableNextPendaftaranId : Nat = 0;
+  stable var stableNextSatuanId : Nat = 0;
+  stable var stableSiteSettings : SiteSettings = {
+    logoUrl = "";
+  };
+
+  // In-memory working copies
+  let articles = Map.empty<Nat, Article>();
+  let teamMembers = Map.empty<Nat, TeamMember>();
+  let activities = Map.empty<Nat, Activity>();
+  let videos = Map.empty<Nat, VideoYoutube>();
+  let galeriItems = Map.empty<Nat, GaleriItem>();
+  let pendaftaranAnggota = Map.empty<Nat, PendaftaranAnggota>();
+  let satuanSSK = Map.empty<Nat, SatuanSSK>();
+
+  var nextArticleId = stableNextArticleId;
+  var nextTeamMemberId = stableNextTeamMemberId;
+  var nextActivityId = stableNextActivityId;
+  var nextVideoId = stableNextVideoId;
+  var nextGaleriItemId = stableNextGaleriItemId;
+  var nextPendaftaranId = stableNextPendaftaranId;
+  var nextSatuanId = stableNextSatuanId;
+
+  var contactInfo : ContactInfo = stableContactInfo;
+  var programUnggulan : ProgramUnggulan = stableProgramUnggulan;
+  var profile : Profile = stableProfile;
+  var siteSettings : SiteSettings = stableSiteSettings;
+
+  // Restore from stable storage on startup
+  for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
+  for ((k, v) in stableTeamMembers.vals()) { teamMembers.add(k, v) };
+  for ((k, v) in stableActivities.vals()) { activities.add(k, v) };
+  for ((k, v) in stableVideos.vals()) { videos.add(k, v) };
+  for ((k, v) in stableGaleriItems.vals()) { galeriItems.add(k, v) };
+  for ((k, v) in stablePendaftaranAnggota.vals()) { pendaftaranAnggota.add(k, v) };
+  for ((k, v) in stableSatuanSSK.vals()) { satuanSSK.add(k, v) };
+
+  // Persist to stable storage before upgrade
+  system func preupgrade() {
+    stableArticles := articles.entries().toArray();
+    stableTeamMembers := teamMembers.entries().toArray();
+    stableActivities := activities.entries().toArray();
+    stableVideos := videos.entries().toArray();
+    stableGaleriItems := galeriItems.entries().toArray();
+    stablePendaftaranAnggota := pendaftaranAnggota.entries().toArray();
+    stableSatuanSSK := satuanSSK.entries().toArray();
+    stableNextArticleId := nextArticleId;
+    stableNextTeamMemberId := nextTeamMemberId;
+    stableNextActivityId := nextActivityId;
+    stableNextVideoId := nextVideoId;
+    stableNextGaleriItemId := nextGaleriItemId;
+    stableNextPendaftaranId := nextPendaftaranId;
+    stableNextSatuanId := nextSatuanId;
+    stableContactInfo := contactInfo;
+    stableProgramUnggulan := programUnggulan;
+    stableProfile := profile;
+    stableSiteSettings := siteSettings;
   };
 
   // Article CRUD
   public shared ({ caller }) func createArticle(title : Text, excerpt : Text, content : Text, category : Text, imageUrl : Text) : async Article {
     let id = nextArticleId;
     nextArticleId += 1;
-
-    let article : Article = {
-      id;
-      title;
-      excerpt;
-      content;
-      category;
-      date = Time.now();
-      imageUrl;
-    };
-
+    let article : Article = { id; title; excerpt; content; category; date = Time.now(); imageUrl };
     articles.add(id, article);
     article;
   };
@@ -94,15 +220,7 @@ actor {
     switch (articles.get(id)) {
       case (null) { Runtime.trap("Article not found") };
       case (?existing) {
-        let updated : Article = {
-          id;
-          title;
-          excerpt;
-          content;
-          category;
-          date = Time.now();
-          imageUrl;
-        };
+        let updated : Article = { id; title; excerpt; content; category; date = Time.now(); imageUrl };
         articles.add(id, updated);
         updated;
       };
@@ -110,25 +228,15 @@ actor {
   };
 
   public shared ({ caller }) func deleteArticle(id : Nat) : async () {
-    if (not articles.containsKey(id)) {
-      Runtime.trap("Article not found");
-    };
+    if (not articles.containsKey(id)) { Runtime.trap("Article not found") };
     articles.remove(id);
   };
 
-  // TeamMember CRUD
+  // Team Member CRUD
   public shared ({ caller }) func createTeamMember(name : Text, role : Text, bio : Text, imageUrl : Text) : async TeamMember {
     let id = nextTeamMemberId;
     nextTeamMemberId += 1;
-
-    let member : TeamMember = {
-      id;
-      name;
-      role;
-      bio;
-      imageUrl;
-    };
-
+    let member : TeamMember = { id; name; role; bio; imageUrl };
     teamMembers.add(id, member);
     member;
   };
@@ -148,13 +256,7 @@ actor {
     switch (teamMembers.get(id)) {
       case (null) { Runtime.trap("Team member not found") };
       case (?existing) {
-        let updated : TeamMember = {
-          id;
-          name;
-          role;
-          bio;
-          imageUrl;
-        };
+        let updated : TeamMember = { id; name; role; bio; imageUrl };
         teamMembers.add(id, updated);
         updated;
       };
@@ -162,9 +264,7 @@ actor {
   };
 
   public shared ({ caller }) func deleteTeamMember(id : Nat) : async () {
-    if (not teamMembers.containsKey(id)) {
-      Runtime.trap("Team member not found");
-    };
+    if (not teamMembers.containsKey(id)) { Runtime.trap("Team member not found") };
     teamMembers.remove(id);
   };
 
@@ -172,15 +272,7 @@ actor {
   public shared ({ caller }) func createActivity(title : Text, description : Text, date : Time.Time, location : Text) : async Activity {
     let id = nextActivityId;
     nextActivityId += 1;
-
-    let activity : Activity = {
-      id;
-      title;
-      description;
-      date;
-      location;
-    };
-
+    let activity : Activity = { id; title; description; date; location };
     activities.add(id, activity);
     activity;
   };
@@ -200,13 +292,7 @@ actor {
     switch (activities.get(id)) {
       case (null) { Runtime.trap("Activity not found") };
       case (?existing) {
-        let updated : Activity = {
-          id;
-          title;
-          description;
-          date;
-          location;
-        };
+        let updated : Activity = { id; title; description; date; location };
         activities.add(id, updated);
         updated;
       };
@@ -214,24 +300,199 @@ actor {
   };
 
   public shared ({ caller }) func deleteActivity(id : Nat) : async () {
-    if (not activities.containsKey(id)) {
-      Runtime.trap("Activity not found");
-    };
+    if (not activities.containsKey(id)) { Runtime.trap("Activity not found") };
     activities.remove(id);
   };
 
-  // ContactInfo management
+  // Contact Info
   public query ({ caller }) func getContactInfo() : async ContactInfo {
     contactInfo;
   };
 
   public shared ({ caller }) func updateContactInfo(address : Text, phone : Text, email : Text, operationalHours : Text) : async ContactInfo {
-    contactInfo := {
-      address;
+    contactInfo := { address; phone; email; operationalHours };
+    contactInfo;
+  };
+
+  // Program Unggulan
+  public query ({ caller }) func getProgramUnggulan() : async ProgramUnggulan {
+    programUnggulan;
+  };
+
+  public shared ({ caller }) func updateProgramUnggulan(judul : Text, deskripsi : Text, pesertaTerlatih : Text, programKegiatan : Text, penghargaan : Text, kecamatanTerlayani : Text) : async ProgramUnggulan {
+    programUnggulan := { judul; deskripsi; pesertaTerlatih; programKegiatan; penghargaan; kecamatanTerlayani };
+    programUnggulan;
+  };
+
+  // Video YouTube CRUD
+  public shared ({ caller }) func createVideo(title : Text, youtubeId : Text, description : Text) : async VideoYoutube {
+    let id = nextVideoId;
+    nextVideoId += 1;
+    let video : VideoYoutube = { id; title; youtubeId; description };
+    videos.add(id, video);
+    video;
+  };
+
+  public query ({ caller }) func getAllVideos() : async [VideoYoutube] {
+    videos.values().toArray();
+  };
+
+  public shared ({ caller }) func updateVideo(id : Nat, title : Text, youtubeId : Text, description : Text) : async VideoYoutube {
+    switch (videos.get(id)) {
+      case (null) { Runtime.trap("Video not found") };
+      case (?existing) {
+        let updated : VideoYoutube = { id; title; youtubeId; description };
+        videos.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteVideo(id : Nat) : async () {
+    if (not videos.containsKey(id)) { Runtime.trap("Video not found") };
+    videos.remove(id);
+  };
+
+  // Profile
+  public query ({ caller }) func getProfile() : async Profile {
+    profile;
+  };
+
+  public shared ({ caller }) func updateProfile(namaOrganisasi : Text, tagline : Text, deskripsi : Text, visi : Text, misi : Text) : async Profile {
+    profile := { namaOrganisasi; tagline; deskripsi; visi; misi };
+    profile;
+  };
+
+  // Gallery CRUD
+  public shared ({ caller }) func createGaleriItem(title : Text, description : Text, mediaUrl : Text, mediaType : Text) : async GaleriItem {
+    let id = nextGaleriItemId;
+    nextGaleriItemId += 1;
+    let item : GaleriItem = {
+      id;
+      title;
+      description;
+      mediaUrl;
+      mediaType;
+      tanggal = Time.now();
+    };
+    galeriItems.add(id, item);
+    item;
+  };
+
+  public query ({ caller }) func getAllGaleriItems() : async [GaleriItem] {
+    galeriItems.values().toArray();
+  };
+
+  public shared ({ caller }) func updateGaleriItem(id : Nat, title : Text, description : Text, mediaUrl : Text, mediaType : Text) : async GaleriItem {
+    switch (galeriItems.get(id)) {
+      case (null) { Runtime.trap("GaleriItem not found") };
+      case (?existing) {
+        let updated : GaleriItem = {
+          id;
+          title;
+          description;
+          mediaUrl;
+          mediaType;
+          tanggal = Time.now();
+        };
+        galeriItems.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteGaleriItem(id : Nat) : async () {
+    if (not galeriItems.containsKey(id)) { Runtime.trap("GaleriItem not found") };
+    galeriItems.remove(id);
+  };
+
+  // Member Registration
+  public shared ({ caller }) func createPendaftaran(nama : Text, nik : Text, alamat : Text, phone : Text, email : Text, pekerjaan : Text, alasan : Text) : async PendaftaranAnggota {
+    let id = nextPendaftaranId;
+    nextPendaftaranId += 1;
+    let pendaftaran : PendaftaranAnggota = {
+      id;
+      nama;
+      nik;
+      alamat;
       phone;
       email;
-      operationalHours;
+      pekerjaan;
+      alasan;
+      tanggalDaftar = Time.now();
+      status = "pending";
     };
-    contactInfo;
+    pendaftaranAnggota.add(id, pendaftaran);
+    pendaftaran;
+  };
+
+  public query ({ caller }) func getAllPendaftaran() : async [PendaftaranAnggota] {
+    pendaftaranAnggota.values().toArray();
+  };
+
+  public shared ({ caller }) func updatePendaftaranStatus(id : Nat, status : Text) : async PendaftaranAnggota {
+    switch (pendaftaranAnggota.get(id)) {
+      case (null) { Runtime.trap("PendaftaranAnggota not found") };
+      case (?existing) {
+        let updated : PendaftaranAnggota = {
+          id = existing.id;
+          nama = existing.nama;
+          nik = existing.nik;
+          alamat = existing.alamat;
+          phone = existing.phone;
+          email = existing.email;
+          pekerjaan = existing.pekerjaan;
+          alasan = existing.alasan;
+          tanggalDaftar = existing.tanggalDaftar;
+          status;
+        };
+        pendaftaranAnggota.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deletePendaftaran(id : Nat) : async () {
+    if (not pendaftaranAnggota.containsKey(id)) { Runtime.trap("PendaftaranAnggota not found") };
+    pendaftaranAnggota.remove(id);
+  };
+
+  // SSK Units CRUD
+  public shared ({ caller }) func createSatuanSSK(nama : Text, alamat : Text, phone : Text, email : Text, deskripsi : Text, logoUrl : Text, ketua : Text) : async SatuanSSK {
+    let id = nextSatuanId;
+    nextSatuanId += 1;
+    let satuan : SatuanSSK = { id; nama; alamat; phone; email; deskripsi; logoUrl; ketua };
+    satuanSSK.add(id, satuan);
+    satuan;
+  };
+
+  public query ({ caller }) func getAllSatuanSSK() : async [SatuanSSK] {
+    satuanSSK.values().toArray();
+  };
+
+  public shared ({ caller }) func updateSatuanSSK(id : Nat, nama : Text, alamat : Text, phone : Text, email : Text, deskripsi : Text, logoUrl : Text, ketua : Text) : async SatuanSSK {
+    switch (satuanSSK.get(id)) {
+      case (null) { Runtime.trap("SatuanSSK not found") };
+      case (?existing) {
+        let updated : SatuanSSK = { id; nama; alamat; phone; email; deskripsi; logoUrl; ketua };
+        satuanSSK.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteSatuanSSK(id : Nat) : async () {
+    if (not satuanSSK.containsKey(id)) { Runtime.trap("SatuanSSK not found") };
+    satuanSSK.remove(id);
+  };
+
+  // Site Settings
+  public query ({ caller }) func getSiteSettings() : async SiteSettings {
+    siteSettings;
+  };
+
+  public shared ({ caller }) func updateSiteSettings(logoUrl : Text) : async SiteSettings {
+    siteSettings := { logoUrl };
+    siteSettings;
   };
 };

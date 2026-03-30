@@ -89,13 +89,10 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface TeamMember {
-    id: bigint;
-    bio: string;
-    name: string;
-    role: string;
-    imageUrl: string;
+export interface SiteSettings {
+    logoUrl: string;
 }
+export type Time = bigint;
 export interface Activity {
     id: bigint;
     title: string;
@@ -103,7 +100,64 @@ export interface Activity {
     description: string;
     location: string;
 }
-export type Time = bigint;
+export interface GaleriItem {
+    id: bigint;
+    title: string;
+    tanggal: Time;
+    description: string;
+    mediaUrl: string;
+    mediaType: string;
+}
+export interface VideoYoutube {
+    id: bigint;
+    title: string;
+    description: string;
+    youtubeId: string;
+}
+export interface ProgramUnggulan {
+    kecamatanTerlayani: string;
+    judul: string;
+    deskripsi: string;
+    penghargaan: string;
+    programKegiatan: string;
+    pesertaTerlatih: string;
+}
+export interface TeamMember {
+    id: bigint;
+    bio: string;
+    name: string;
+    role: string;
+    imageUrl: string;
+}
+export interface SatuanSSK {
+    id: bigint;
+    alamat: string;
+    nama: string;
+    deskripsi: string;
+    email: string;
+    logoUrl: string;
+    phone: string;
+    ketua: string;
+}
+export interface Profile {
+    tagline: string;
+    misi: string;
+    visi: string;
+    deskripsi: string;
+    namaOrganisasi: string;
+}
+export interface PendaftaranAnggota {
+    id: bigint;
+    nik: string;
+    status: string;
+    alamat: string;
+    alasan: string;
+    nama: string;
+    email: string;
+    pekerjaan: string;
+    tanggalDaftar: Time;
+    phone: string;
+}
 export interface ContactInfo {
     operationalHours: string;
     email: string;
@@ -122,21 +176,43 @@ export interface Article {
 export interface backendInterface {
     createActivity(title: string, description: string, date: Time, location: string): Promise<Activity>;
     createArticle(title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
+    createGaleriItem(title: string, description: string, mediaUrl: string, mediaType: string): Promise<GaleriItem>;
+    createPendaftaran(nama: string, nik: string, alamat: string, phone: string, email: string, pekerjaan: string, alasan: string): Promise<PendaftaranAnggota>;
+    createSatuanSSK(nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
     createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    createVideo(title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
     deleteActivity(id: bigint): Promise<void>;
     deleteArticle(id: bigint): Promise<void>;
+    deleteGaleriItem(id: bigint): Promise<void>;
+    deletePendaftaran(id: bigint): Promise<void>;
+    deleteSatuanSSK(id: bigint): Promise<void>;
     deleteTeamMember(id: bigint): Promise<void>;
+    deleteVideo(id: bigint): Promise<void>;
     getActivity(id: bigint): Promise<Activity>;
     getAllActivities(): Promise<Array<Activity>>;
     getAllArticles(): Promise<Array<Article>>;
+    getAllGaleriItems(): Promise<Array<GaleriItem>>;
+    getAllPendaftaran(): Promise<Array<PendaftaranAnggota>>;
+    getAllSatuanSSK(): Promise<Array<SatuanSSK>>;
     getAllTeamMembers(): Promise<Array<TeamMember>>;
+    getAllVideos(): Promise<Array<VideoYoutube>>;
     getArticle(id: bigint): Promise<Article>;
     getContactInfo(): Promise<ContactInfo>;
+    getProfile(): Promise<Profile>;
+    getProgramUnggulan(): Promise<ProgramUnggulan>;
+    getSiteSettings(): Promise<SiteSettings>;
     getTeamMember(id: bigint): Promise<TeamMember>;
     updateActivity(id: bigint, title: string, description: string, date: Time, location: string): Promise<Activity>;
     updateArticle(id: bigint, title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
     updateContactInfo(address: string, phone: string, email: string, operationalHours: string): Promise<ContactInfo>;
+    updateGaleriItem(id: bigint, title: string, description: string, mediaUrl: string, mediaType: string): Promise<GaleriItem>;
+    updatePendaftaranStatus(id: bigint, status: string): Promise<PendaftaranAnggota>;
+    updateProfile(namaOrganisasi: string, tagline: string, deskripsi: string, visi: string, misi: string): Promise<Profile>;
+    updateProgramUnggulan(judul: string, deskripsi: string, pesertaTerlatih: string, programKegiatan: string, penghargaan: string, kecamatanTerlayani: string): Promise<ProgramUnggulan>;
+    updateSatuanSSK(id: bigint, nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
+    updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -168,6 +244,48 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async createGaleriItem(arg0: string, arg1: string, arg2: string, arg3: string): Promise<GaleriItem> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createGaleriItem(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createGaleriItem(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async createPendaftaran(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string): Promise<PendaftaranAnggota> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createPendaftaran(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createPendaftaran(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            return result;
+        }
+    }
+    async createSatuanSSK(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string): Promise<SatuanSSK> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createSatuanSSK(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createSatuanSSK(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            return result;
+        }
+    }
     async createTeamMember(arg0: string, arg1: string, arg2: string, arg3: string): Promise<TeamMember> {
         if (this.processError) {
             try {
@@ -179,6 +297,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createTeamMember(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async createVideo(arg0: string, arg1: string, arg2: string): Promise<VideoYoutube> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createVideo(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createVideo(arg0, arg1, arg2);
             return result;
         }
     }
@@ -210,6 +342,48 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteGaleriItem(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteGaleriItem(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteGaleriItem(arg0);
+            return result;
+        }
+    }
+    async deletePendaftaran(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deletePendaftaran(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deletePendaftaran(arg0);
+            return result;
+        }
+    }
+    async deleteSatuanSSK(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteSatuanSSK(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteSatuanSSK(arg0);
+            return result;
+        }
+    }
     async deleteTeamMember(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
@@ -221,6 +395,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteTeamMember(arg0);
+            return result;
+        }
+    }
+    async deleteVideo(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteVideo(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteVideo(arg0);
             return result;
         }
     }
@@ -266,6 +454,48 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllGaleriItems(): Promise<Array<GaleriItem>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllGaleriItems();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllGaleriItems();
+            return result;
+        }
+    }
+    async getAllPendaftaran(): Promise<Array<PendaftaranAnggota>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllPendaftaran();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllPendaftaran();
+            return result;
+        }
+    }
+    async getAllSatuanSSK(): Promise<Array<SatuanSSK>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllSatuanSSK();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllSatuanSSK();
+            return result;
+        }
+    }
     async getAllTeamMembers(): Promise<Array<TeamMember>> {
         if (this.processError) {
             try {
@@ -277,6 +507,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllTeamMembers();
+            return result;
+        }
+    }
+    async getAllVideos(): Promise<Array<VideoYoutube>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllVideos();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllVideos();
             return result;
         }
     }
@@ -305,6 +549,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getContactInfo();
+            return result;
+        }
+    }
+    async getProfile(): Promise<Profile> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProfile();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProfile();
+            return result;
+        }
+    }
+    async getProgramUnggulan(): Promise<ProgramUnggulan> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProgramUnggulan();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProgramUnggulan();
+            return result;
+        }
+    }
+    async getSiteSettings(): Promise<SiteSettings> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSiteSettings();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSiteSettings();
             return result;
         }
     }
@@ -364,6 +650,90 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateGaleriItem(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string): Promise<GaleriItem> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateGaleriItem(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateGaleriItem(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async updatePendaftaranStatus(arg0: bigint, arg1: string): Promise<PendaftaranAnggota> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updatePendaftaranStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updatePendaftaranStatus(arg0, arg1);
+            return result;
+        }
+    }
+    async updateProfile(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<Profile> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateProfile(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateProfile(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async updateProgramUnggulan(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string): Promise<ProgramUnggulan> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateProgramUnggulan(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateProgramUnggulan(arg0, arg1, arg2, arg3, arg4, arg5);
+            return result;
+        }
+    }
+    async updateSatuanSSK(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string): Promise<SatuanSSK> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateSatuanSSK(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateSatuanSSK(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            return result;
+        }
+    }
+    async updateSiteSettings(arg0: string): Promise<SiteSettings> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateSiteSettings(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateSiteSettings(arg0);
+            return result;
+        }
+    }
     async updateTeamMember(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string): Promise<TeamMember> {
         if (this.processError) {
             try {
@@ -375,6 +745,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateTeamMember(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async updateVideo(arg0: bigint, arg1: string, arg2: string, arg3: string): Promise<VideoYoutube> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateVideo(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateVideo(arg0, arg1, arg2, arg3);
             return result;
         }
     }

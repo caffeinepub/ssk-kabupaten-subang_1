@@ -11,7 +11,11 @@ import {
 import { motion } from "motion/react";
 import type { Article } from "../backend.d";
 import { sampleArticles, sampleTeamMembers } from "../data/sampleData";
-import { useAllArticles, useTeamMembers } from "../hooks/useQueries";
+import {
+  useAllArticles,
+  useProgramUnggulan,
+  useTeamMembers,
+} from "../hooks/useQueries";
 
 function formatDate(time: bigint) {
   const ms = Number(time) / 1_000_000;
@@ -32,6 +36,35 @@ const features = [
 export default function Home() {
   const { data: articlesData } = useAllArticles();
   const { data: teamData } = useTeamMembers();
+  const { data: programData } = useProgramUnggulan();
+
+  const programJudul =
+    programData?.judul ?? "Program Unggulan SSK Kabupaten Subang";
+  const programDeskripsi =
+    programData?.deskripsi ??
+    "Edukasi Kependudukan yang Inovatif dan Berkelanjutan — memberikan dampak nyata bagi masyarakat Kabupaten Subang melalui program terstruktur dan terukur.";
+  const programStats = [
+    {
+      icon: Users,
+      value: programData?.pesertaTerlatih ?? "1.000+",
+      label: "Peserta Terlatih",
+    },
+    {
+      icon: BookOpen,
+      value: programData?.programKegiatan ?? "15+",
+      label: "Program Kegiatan",
+    },
+    {
+      icon: Award,
+      value: programData?.penghargaan ?? "5+",
+      label: "Penghargaan",
+    },
+    {
+      icon: TrendingUp,
+      value: programData?.kecamatanTerlayani ?? "30+",
+      label: "Kecamatan Terlayani",
+    },
+  ];
   const articles: Article[] =
     articlesData && articlesData.length > 0 ? articlesData : sampleArticles;
   const teamMembers =
@@ -133,12 +166,10 @@ export default function Home() {
                 Program Kami
               </p>
               <h2 className="text-white font-bold text-2xl md:text-3xl uppercase leading-tight mb-4">
-                Program Unggulan SSK Kabupaten Subang
+                {programJudul}
               </h2>
               <p className="text-gray-300 text-base mb-6 leading-relaxed">
-                Edukasi Kependudukan yang Inovatif dan Berkelanjutan —
-                memberikan dampak nyata bagi masyarakat Kabupaten Subang melalui
-                program terstruktur dan terukur.
+                {programDeskripsi}
               </p>
               <Link
                 to="/tentang"
@@ -148,16 +179,7 @@ export default function Home() {
               </Link>
             </motion.div>
             <div className="grid grid-cols-2 gap-6">
-              {[
-                { icon: Users, value: "1.000+", label: "Peserta Terlatih" },
-                { icon: BookOpen, value: "15+", label: "Program Kegiatan" },
-                { icon: Award, value: "5+", label: "Penghargaan" },
-                {
-                  icon: TrendingUp,
-                  value: "30+",
-                  label: "Kecamatan Terlayani",
-                },
-              ].map((stat, i) => (
+              {programStats.map((stat, i) => (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, scale: 0.9 }}
