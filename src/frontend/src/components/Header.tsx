@@ -8,6 +8,8 @@ const navLinks = [
   { label: "Beranda", href: "/" as const },
   { label: "Tentang SSK", href: "/tentang" as const },
   { label: "Berita & Artikel", href: "/berita" as const },
+  { label: "Kegiatan", href: "/kegiatan" as const },
+  { label: "Konseling", href: "/konseling" as const },
   { label: "Galeri", href: "/galeri" as const },
   { label: "Satuan", href: "/satuan" as const },
   { label: "Daftar Anggota", href: "/daftar" as const },

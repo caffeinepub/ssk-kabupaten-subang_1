@@ -90,6 +90,15 @@ export const ProgramUnggulan = IDL.Record({
   'pesertaTerlatih' : IDL.Text,
 });
 export const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
+export const SliderBanner = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'description' : IDL.Text,
+  'imageUrl' : IDL.Text,
+  'linkUrl' : IDL.Text,
+  'urutan' : IDL.Nat,
+});
+
 
 export const idlService = IDL.Service({
   'createActivity' : IDL.Func(
@@ -117,6 +126,11 @@ export const idlService = IDL.Service({
       [SatuanSSK],
       [],
     ),
+  'createSliderBanner' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+      [SliderBanner],
+      [],
+    ),
   'createTeamMember' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [TeamMember],
@@ -124,6 +138,7 @@ export const idlService = IDL.Service({
     ),
   'createVideo' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [VideoYoutube], []),
   'deleteActivity' : IDL.Func([IDL.Nat], [], []),
+  'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
   'deleteArticle' : IDL.Func([IDL.Nat], [], []),
   'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
   'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
@@ -132,6 +147,7 @@ export const idlService = IDL.Service({
   'deleteVideo' : IDL.Func([IDL.Nat], [], []),
   'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
   'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
+  'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
   'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
   'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
   'getAllPendaftaran' : IDL.Func([], [IDL.Vec(PendaftaranAnggota)], ['query']),
@@ -191,6 +207,11 @@ export const idlService = IDL.Service({
         IDL.Text,
       ],
       [SatuanSSK],
+      [],
+    ),
+  'updateSliderBanner' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+      [SliderBanner],
       [],
     ),
   'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
@@ -291,6 +312,14 @@ export const idlFactory = ({ IDL }) => {
     'pesertaTerlatih' : IDL.Text,
   });
   const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
+  const SliderBanner = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'description' : IDL.Text,
+    'imageUrl' : IDL.Text,
+    'linkUrl' : IDL.Text,
+    'urutan' : IDL.Nat,
+  });
   
   return IDL.Service({
     'createActivity' : IDL.Func(
@@ -318,6 +347,11 @@ export const idlFactory = ({ IDL }) => {
         [SatuanSSK],
         [],
       ),
+    'createSliderBanner' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+        [SliderBanner],
+        [],
+      ),
     'createTeamMember' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [TeamMember],
@@ -329,6 +363,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteActivity' : IDL.Func([IDL.Nat], [], []),
+  'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
     'deleteArticle' : IDL.Func([IDL.Nat], [], []),
     'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
     'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
@@ -337,6 +372,7 @@ export const idlFactory = ({ IDL }) => {
     'deleteVideo' : IDL.Func([IDL.Nat], [], []),
     'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
     'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
+  'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
     'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
     'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
     'getAllPendaftaran' : IDL.Func(
@@ -402,7 +438,12 @@ export const idlFactory = ({ IDL }) => {
         [SatuanSSK],
         [],
       ),
-    'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
+    'updateSliderBanner' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+      [SliderBanner],
+      [],
+    ),
+  'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
     'updateTeamMember' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [TeamMember],

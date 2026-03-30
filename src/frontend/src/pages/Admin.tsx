@@ -41,6 +41,7 @@ import type {
   PendaftaranAnggota,
   Profile,
   SatuanSSK,
+  SliderBanner,
   TeamMember,
   VideoYoutube,
 } from "../backend.d";
@@ -88,6 +89,7 @@ import {
   useAllGaleriItems,
   useAllPendaftaran,
   useAllSatuanSSK,
+  useAllSliderBanners,
   useAllVideos,
   useContactInfo,
   useProfile,
@@ -179,6 +181,22 @@ const emptySatuanForm: SatuanForm = {
   email: "",
   deskripsi: "",
   logoUrl: "",
+};
+
+// ---- SliderBanner ----
+interface SliderForm {
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+  urutan: number;
+}
+const emptySliderForm: SliderForm = {
+  title: "",
+  description: "",
+  imageUrl: "",
+  linkUrl: "",
+  urutan: 1,
 };
 
 function bigintToDateStr(ts: bigint) {
@@ -335,6 +353,15 @@ export default function Admin() {
   const [satuanForm, setSatuanForm] = useState<SatuanForm>(emptySatuanForm);
   const [deleteSatuanTarget, setDeleteSatuanTarget] =
     useState<SatuanSSK | null>(null);
+
+  // ---- Slider Banner state ----
+  const { data: sliderBanners = [], isLoading: sliderLoading } =
+    useAllSliderBanners();
+  const [sliderFormOpen, setSliderFormOpen] = useState(false);
+  const [editingSlider, setEditingSlider] = useState<SliderBanner | null>(null);
+  const [sliderForm, setSliderForm] = useState<SliderForm>(emptySliderForm);
+  const [deleteSliderTarget, setDeleteSliderTarget] =
+    useState<SliderBanner | null>(null);
 
   // ---- Site Settings state ----
   const { data: siteSettingsData } = useSiteSettings();
@@ -496,6 +523,62 @@ export default function Admin() {
       toast.success("Logo berhasil diperbarui");
     },
     onError: () => toast.error("Gagal memperbarui logo"),
+  });
+
+  // ---- Slider Banner mutations ----
+  const createSliderMutation = useMutation({
+    mutationFn: async (data: SliderForm) => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).createSliderBanner(
+        data.title,
+        data.description,
+        data.imageUrl,
+        data.linkUrl,
+        BigInt(data.urutan),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sliderBanners"] });
+      toast.success("Slide berhasil ditambahkan");
+      setSliderFormOpen(false);
+      setSliderForm(emptySliderForm);
+    },
+    onError: () => toast.error("Gagal menambahkan slide"),
+  });
+
+  const updateSliderMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: bigint; data: SliderForm }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).updateSliderBanner(
+        id,
+        data.title,
+        data.description,
+        data.imageUrl,
+        data.linkUrl,
+        BigInt(data.urutan),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sliderBanners"] });
+      toast.success("Slide berhasil diperbarui");
+      setSliderFormOpen(false);
+      setEditingSlider(null);
+      setSliderForm(emptySliderForm);
+    },
+    onError: () => toast.error("Gagal memperbarui slide"),
+  });
+
+  const deleteSliderMutation = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not ready");
+      return (actor as any).deleteSliderBanner(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sliderBanners"] });
+      toast.success("Slide berhasil dihapus");
+      setDeleteSliderTarget(null);
+    },
+    onError: () => toast.error("Gagal menghapus slide"),
   });
 
   // ---- Article mutations ----
@@ -935,6 +1018,13 @@ export default function Admin() {
                 data-ocid="admin.logo.tab"
               >
                 Pengaturan Logo
+              </TabsTrigger>
+              <TabsTrigger
+                value="slider"
+                className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                data-ocid="admin.slider.tab"
+              >
+                Slider Banner
               </TabsTrigger>
             </TabsList>
 
@@ -2306,6 +2396,138 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Slider Banner Tab */}
+            <TabsContent value="slider" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-navy">
+                    Manajemen Slider Banner
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {sliderBanners.length} slide tersedia
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 bg-gold text-navy px-4 py-2 rounded-lg font-semibold hover:bg-gold/90 transition-colors"
+                  onClick={() => {
+                    setEditingSlider(null);
+                    setSliderForm(emptySliderForm);
+                    setSliderFormOpen(true);
+                  }}
+                  data-ocid="admin.slider.open_modal_button"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Slide
+                </button>
+              </div>
+
+              <Card className="shadow-sm border-0">
+                <CardContent className="p-0">
+                  {sliderLoading ? (
+                    <div
+                      className="flex items-center justify-center py-12"
+                      data-ocid="admin.slider.loading_state"
+                    >
+                      <Loader2 className="w-8 h-8 animate-spin text-navy" />
+                    </div>
+                  ) : sliderBanners.length === 0 ? (
+                    <div
+                      className="text-center py-12 text-gray-400"
+                      data-ocid="admin.slider.empty_state"
+                    >
+                      <p>Belum ada slide. Tambah slide pertama Anda.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-navy font-bold">
+                            Urutan
+                          </TableHead>
+                          <TableHead className="text-navy font-bold">
+                            Judul
+                          </TableHead>
+                          <TableHead className="text-navy font-bold">
+                            Gambar
+                          </TableHead>
+                          <TableHead className="text-navy font-bold">
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[...sliderBanners]
+                          .sort((a, b) => Number(a.urutan) - Number(b.urutan))
+                          .map((slide, index) => (
+                            <TableRow
+                              key={slide.id.toString()}
+                              data-ocid={`admin.slider.row.${index + 1}`}
+                            >
+                              <TableCell className="font-bold text-navy">
+                                {Number(slide.urutan)}
+                              </TableCell>
+                              <TableCell>
+                                <p className="font-semibold text-navy">
+                                  {slide.title}
+                                </p>
+                                {slide.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                    {slide.description}
+                                  </p>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {slide.imageUrl ? (
+                                  <img
+                                    src={slide.imageUrl}
+                                    alt={slide.title}
+                                    className="w-16 h-10 object-cover rounded"
+                                  />
+                                ) : (
+                                  <span className="text-gray-400 text-xs">
+                                    No image
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    className="p-1.5 bg-navy/10 hover:bg-navy/20 rounded text-navy transition-colors"
+                                    onClick={() => {
+                                      setEditingSlider(slide);
+                                      setSliderForm({
+                                        title: slide.title,
+                                        description: slide.description,
+                                        imageUrl: slide.imageUrl,
+                                        linkUrl: slide.linkUrl,
+                                        urutan: Number(slide.urutan),
+                                      });
+                                      setSliderFormOpen(true);
+                                    }}
+                                    data-ocid={`admin.slider.edit_button.${index + 1}`}
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-500 transition-colors"
+                                    onClick={() => setDeleteSliderTarget(slide)}
+                                    data-ocid={`admin.slider.delete_button.${index + 1}`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
       </div>
@@ -3471,6 +3693,189 @@ export default function Admin() {
               ) : (
                 <>
                   <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Slider Banner Form Dialog */}
+      <Dialog open={sliderFormOpen} onOpenChange={setSliderFormOpen}>
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          data-ocid="admin.slider.dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-navy">
+              {editingSlider ? "Edit Slide" : "Tambah Slide Baru"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingSlider
+                ? "Perbarui informasi slide."
+                : "Isi informasi slide baru."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Judul</Label>
+              <input
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                value={sliderForm.title}
+                onChange={(e) =>
+                  setSliderForm((p) => ({ ...p, title: e.target.value }))
+                }
+                placeholder="Judul slide"
+                data-ocid="admin.slider.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Deskripsi</Label>
+              <textarea
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 min-h-[80px]"
+                value={sliderForm.description}
+                onChange={(e) =>
+                  setSliderForm((p) => ({ ...p, description: e.target.value }))
+                }
+                placeholder="Deskripsi singkat slide"
+                data-ocid="admin.slider.textarea"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Gambar</Label>
+              <input
+                type="file"
+                accept="image/*"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gold file:text-navy cursor-pointer"
+                data-ocid="admin.slider.upload_button"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const base64 = await compressImageToBase64(file);
+                    setSliderForm((p) => ({ ...p, imageUrl: base64 }));
+                  }
+                }}
+              />
+              {sliderForm.imageUrl && (
+                <img
+                  src={sliderForm.imageUrl}
+                  alt="Preview"
+                  className="mt-2 w-full h-32 object-cover rounded"
+                />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">
+                Link URL (opsional)
+              </Label>
+              <input
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                value={sliderForm.linkUrl}
+                onChange={(e) =>
+                  setSliderForm((p) => ({ ...p, linkUrl: e.target.value }))
+                }
+                placeholder="https://..."
+                data-ocid="admin.slider.link.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-navy font-semibold">Urutan</Label>
+              <input
+                type="number"
+                min={1}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+                value={sliderForm.urutan}
+                onChange={(e) =>
+                  setSliderForm((p) => ({
+                    ...p,
+                    urutan: Number(e.target.value),
+                  }))
+                }
+                data-ocid="admin.slider.urutan.input"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSliderFormOpen(false)}
+              data-ocid="admin.slider.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              className="bg-gold text-navy hover:bg-gold/90 font-semibold"
+              disabled={
+                createSliderMutation.isPending || updateSliderMutation.isPending
+              }
+              data-ocid="admin.slider.submit_button"
+              onClick={() => {
+                if (editingSlider) {
+                  updateSliderMutation.mutate({
+                    id: editingSlider.id,
+                    data: sliderForm,
+                  });
+                } else {
+                  createSliderMutation.mutate(sliderForm);
+                }
+              }}
+            >
+              {createSliderMutation.isPending ||
+              updateSliderMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Menyimpan…
+                </>
+              ) : editingSlider ? (
+                "Perbarui Slide"
+              ) : (
+                "Tambah Slide"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Slider Confirmation */}
+      <Dialog
+        open={!!deleteSliderTarget}
+        onOpenChange={() => setDeleteSliderTarget(null)}
+      >
+        <DialogContent data-ocid="admin.slider.delete.dialog">
+          <DialogHeader>
+            <DialogTitle className="text-navy">Hapus Slide</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus slide &quot;
+              {deleteSliderTarget?.title}&quot;? Tindakan ini tidak dapat
+              dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteSliderTarget(null)}
+              data-ocid="admin.slider.delete.cancel_button"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteSliderTarget &&
+                deleteSliderMutation.mutate(deleteSliderTarget.id)
+              }
+              disabled={deleteSliderMutation.isPending}
+              data-ocid="admin.slider.delete.confirm_button"
+            >
+              {deleteSliderMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Menghapus…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Hapus
                 </>
               )}
             </Button>

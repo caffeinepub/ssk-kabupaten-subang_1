@@ -64,7 +64,6 @@ actor {
     misi : Text;
   };
 
-  // New types for additional features
   type GaleriItem = {
     id : Nat;
     title : Text;
@@ -101,6 +100,16 @@ actor {
   type SiteSettings = {
     logoUrl : Text;
   };
+
+  type SliderBanner = {
+    id : Nat;
+    title : Text;
+    description : Text;
+    imageUrl : Text;
+    linkUrl : Text;
+    urutan : Nat;
+  };
+
 
   // Stable storage - persists across upgrades
   stable var stableArticles : [(Nat, Article)] = [];
@@ -142,6 +151,8 @@ actor {
   stable var stableSiteSettings : SiteSettings = {
     logoUrl = "";
   };
+  stable var stableSliderBanners : [(Nat, SliderBanner)] = [];
+  stable var stableNextSliderId : Nat = 0;
 
   // In-memory working copies
   let articles = Map.empty<Nat, Article>();
@@ -151,6 +162,7 @@ actor {
   let galeriItems = Map.empty<Nat, GaleriItem>();
   let pendaftaranAnggota = Map.empty<Nat, PendaftaranAnggota>();
   let satuanSSK = Map.empty<Nat, SatuanSSK>();
+  let sliderBanners = Map.empty<Nat, SliderBanner>();
 
   var nextArticleId = stableNextArticleId;
   var nextTeamMemberId = stableNextTeamMemberId;
@@ -159,13 +171,14 @@ actor {
   var nextGaleriItemId = stableNextGaleriItemId;
   var nextPendaftaranId = stableNextPendaftaranId;
   var nextSatuanId = stableNextSatuanId;
+  var nextSliderId = stableNextSliderId;
 
   var contactInfo : ContactInfo = stableContactInfo;
   var programUnggulan : ProgramUnggulan = stableProgramUnggulan;
   var profile : Profile = stableProfile;
   var siteSettings : SiteSettings = stableSiteSettings;
 
-  // Restore from stable storage on startup
+  // Restore from stable storage on install (first time)
   for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
   for ((k, v) in stableTeamMembers.vals()) { teamMembers.add(k, v) };
   for ((k, v) in stableActivities.vals()) { activities.add(k, v) };
@@ -173,6 +186,7 @@ actor {
   for ((k, v) in stableGaleriItems.vals()) { galeriItems.add(k, v) };
   for ((k, v) in stablePendaftaranAnggota.vals()) { pendaftaranAnggota.add(k, v) };
   for ((k, v) in stableSatuanSSK.vals()) { satuanSSK.add(k, v) };
+  for ((k, v) in stableSliderBanners.vals()) { sliderBanners.add(k, v) };
 
   // Persist to stable storage before upgrade
   system func preupgrade() {
@@ -194,6 +208,33 @@ actor {
     stableProgramUnggulan := programUnggulan;
     stableProfile := profile;
     stableSiteSettings := siteSettings;
+    stableSliderBanners := sliderBanners.entries().toArray();
+    stableNextSliderId := nextSliderId;
+  };
+
+  // Restore from stable storage after upgrade
+  system func postupgrade() {
+    for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
+    for ((k, v) in stableTeamMembers.vals()) { teamMembers.add(k, v) };
+    for ((k, v) in stableActivities.vals()) { activities.add(k, v) };
+    for ((k, v) in stableVideos.vals()) { videos.add(k, v) };
+    for ((k, v) in stableGaleriItems.vals()) { galeriItems.add(k, v) };
+    for ((k, v) in stablePendaftaranAnggota.vals()) { pendaftaranAnggota.add(k, v) };
+    for ((k, v) in stableSatuanSSK.vals()) { satuanSSK.add(k, v) };
+  for ((k, v) in stableSliderBanners.vals()) { sliderBanners.add(k, v) };
+    nextArticleId := stableNextArticleId;
+    nextTeamMemberId := stableNextTeamMemberId;
+    nextActivityId := stableNextActivityId;
+    nextVideoId := stableNextVideoId;
+    nextGaleriItemId := stableNextGaleriItemId;
+    nextPendaftaranId := stableNextPendaftaranId;
+    nextSatuanId := stableNextSatuanId;
+    contactInfo := stableContactInfo;
+    programUnggulan := stableProgramUnggulan;
+    profile := stableProfile;
+    siteSettings := stableSiteSettings;
+    for ((k, v) in stableSliderBanners.vals()) { sliderBanners.add(k, v) };
+    nextSliderId := stableNextSliderId;
   };
 
   // Article CRUD
@@ -494,5 +535,34 @@ actor {
   public shared ({ caller }) func updateSiteSettings(logoUrl : Text) : async SiteSettings {
     siteSettings := { logoUrl };
     siteSettings;
+  };
+
+  // SliderBanner CRUD
+  public shared ({ caller }) func createSliderBanner(title : Text, description : Text, imageUrl : Text, linkUrl : Text, urutan : Nat) : async SliderBanner {
+    let id = nextSliderId;
+    nextSliderId += 1;
+    let banner : SliderBanner = { id; title; description; imageUrl; linkUrl; urutan };
+    sliderBanners.add(id, banner);
+    banner;
+  };
+
+  public query ({ caller }) func getAllSliderBanners() : async [SliderBanner] {
+    sliderBanners.values().toArray();
+  };
+
+  public shared ({ caller }) func updateSliderBanner(id : Nat, title : Text, description : Text, imageUrl : Text, linkUrl : Text, urutan : Nat) : async SliderBanner {
+    switch (sliderBanners.get(id)) {
+      case (null) { Runtime.trap("SliderBanner not found") };
+      case (?existing) {
+        let updated : SliderBanner = { id; title; description; imageUrl; linkUrl; urutan };
+        sliderBanners.add(id, updated);
+        updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteSliderBanner(id : Nat) : async () {
+    if (not sliderBanners.containsKey(id)) { Runtime.trap("SliderBanner not found") };
+    sliderBanners.remove(id);
   };
 };

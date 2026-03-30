@@ -157,3 +157,15 @@ export function useSiteSettings() {
     enabled: !!actor && !isFetching,
   });
 }
+
+export function useAllSliderBanners() {
+  const { actor, isFetching } = useActor();
+  return useQuery<import("../backend.d").SliderBanner[]>({
+    queryKey: ["sliderBanners"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return (actor as any).getAllSliderBanners();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}

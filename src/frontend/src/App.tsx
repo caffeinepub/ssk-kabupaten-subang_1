@@ -15,6 +15,8 @@ import BeritaDetail from "./pages/BeritaDetail";
 import Daftar from "./pages/Daftar";
 import Galeri from "./pages/Galeri";
 import Home from "./pages/Home";
+import Kegiatan from "./pages/Kegiatan";
+import Konseling from "./pages/Konseling";
 import Kontak from "./pages/Kontak";
 import Satuan from "./pages/Satuan";
 import Tentang from "./pages/Tentang";
@@ -53,6 +55,16 @@ const beritaDetailRoute = createRoute({
   path: "/berita/$id",
   component: BeritaDetail,
 });
+const kegiatanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/kegiatan",
+  component: Kegiatan,
+});
+const konselingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/konseling",
+  component: Konseling,
+});
 const kontakRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/kontak",
@@ -84,6 +96,8 @@ const routeTree = rootRoute.addChildren([
   tentangRoute,
   beritaRoute,
   beritaDetailRoute,
+  kegiatanRoute,
+  konselingRoute,
   kontakRoute,
   adminRoute,
   galeriRoute,

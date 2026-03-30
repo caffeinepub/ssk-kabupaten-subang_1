@@ -7,6 +7,14 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface SliderBanner {
+  id: bigint;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+  urutan: bigint;
+}
 export interface SiteSettings {
     logoUrl: string;
 }
@@ -97,9 +105,11 @@ export interface backendInterface {
     createGaleriItem(title: string, description: string, mediaUrl: string, mediaType: string): Promise<GaleriItem>;
     createPendaftaran(nama: string, nik: string, alamat: string, phone: string, email: string, pekerjaan: string, alasan: string): Promise<PendaftaranAnggota>;
     createSatuanSSK(nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
-    createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    createSliderBanner(title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
+  createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     createVideo(title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
     deleteActivity(id: bigint): Promise<void>;
+  deleteSliderBanner(id: bigint): Promise<void>;
     deleteArticle(id: bigint): Promise<void>;
     deleteGaleriItem(id: bigint): Promise<void>;
     deletePendaftaran(id: bigint): Promise<void>;
@@ -128,7 +138,8 @@ export interface backendInterface {
     updateProfile(namaOrganisasi: string, tagline: string, deskripsi: string, visi: string, misi: string): Promise<Profile>;
     updateProgramUnggulan(judul: string, deskripsi: string, pesertaTerlatih: string, programKegiatan: string, penghargaan: string, kecamatanTerlayani: string): Promise<ProgramUnggulan>;
     updateSatuanSSK(id: bigint, nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
-    updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
+    updateSliderBanner(id: bigint, title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
+  updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
 }

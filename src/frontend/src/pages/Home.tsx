@@ -3,16 +3,20 @@ import {
   ArrowRight,
   Award,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
   Handshake,
   Heart,
   TrendingUp,
   Users,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import type { Article } from "../backend.d";
 import { sampleArticles, sampleTeamMembers } from "../data/sampleData";
 import {
   useAllArticles,
+  useAllSliderBanners,
   useProgramUnggulan,
   useTeamMembers,
 } from "../hooks/useQueries";
@@ -36,6 +40,32 @@ const features = [
 export default function Home() {
   const { data: articlesData } = useAllArticles();
   const { data: teamData } = useTeamMembers();
+  const { data: sliderBanners = [] } = useAllSliderBanners();
+  const sortedSliders = [...sliderBanners].sort(
+    (a, b) => Number(a.urutan) - Number(b.urutan),
+  );
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [slideDir, setSlideDir] = useState(1);
+
+  const nextSlide = useCallback(() => {
+    if (sortedSliders.length === 0) return;
+    setSlideDir(1);
+    setActiveSlide((prev) => (prev + 1) % sortedSliders.length);
+  }, [sortedSliders.length]);
+
+  const prevSlide = () => {
+    if (sortedSliders.length === 0) return;
+    setSlideDir(-1);
+    setActiveSlide(
+      (prev) => (prev - 1 + sortedSliders.length) % sortedSliders.length,
+    );
+  };
+
+  useEffect(() => {
+    if (sortedSliders.length <= 1) return;
+    const interval = setInterval(nextSlide, 4000);
+    return () => clearInterval(interval);
+  }, [sortedSliders.length, nextSlide]);
   const { data: programData } = useProgramUnggulan();
 
   const programJudul =
@@ -337,6 +367,133 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Slider Banner */}
+      {sortedSliders.length > 0 && (
+        <section className="py-16 bg-navy">
+          <div className="max-w-6xl mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-10"
+            >
+              <h2 className="text-white font-bold text-2xl uppercase tracking-wide">
+                Galeri Slider
+              </h2>
+              <div className="w-16 h-1 bg-gold mx-auto mt-3" />
+            </motion.div>
+            <div
+              className="relative overflow-hidden rounded-2xl shadow-2xl"
+              style={{ height: "420px" }}
+            >
+              <AnimatePresence mode="wait" custom={slideDir}>
+                {sortedSliders[activeSlide] && (
+                  <motion.div
+                    key={sortedSliders[activeSlide].id.toString()}
+                    custom={slideDir}
+                    variants={{
+                      enter: (dir: number) => ({
+                        x: dir > 0 ? "100%" : "-100%",
+                        opacity: 0,
+                      }),
+                      center: { x: 0, opacity: 1 },
+                      exit: (dir: number) => ({
+                        x: dir > 0 ? "-100%" : "100%",
+                        opacity: 0,
+                      }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className="absolute inset-0"
+                  >
+                    {sortedSliders[activeSlide].linkUrl ? (
+                      <a
+                        href={sortedSliders[activeSlide].linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full h-full"
+                      >
+                        <SlideContent slide={sortedSliders[activeSlide]} />
+                      </a>
+                    ) : (
+                      <SlideContent slide={sortedSliders[activeSlide]} />
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Arrow buttons */}
+              {sortedSliders.length > 1 && (
+                <>
+                  <button
+                    onClick={prevSlide}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-gold/90 hover:bg-gold text-navy rounded-full p-2 shadow-lg z-10 transition-colors"
+                    type="button"
+                    data-ocid="slider.pagination_prev"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-gold/90 hover:bg-gold text-navy rounded-full p-2 shadow-lg z-10 transition-colors"
+                    type="button"
+                    data-ocid="slider.pagination_next"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Dot indicators */}
+              {sortedSliders.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                  {sortedSliders.map((slide, i) => (
+                    <button
+                      type="button"
+                      key={slide.id.toString()}
+                      onClick={() => {
+                        setSlideDir(i > activeSlide ? 1 : -1);
+                        setActiveSlide(i);
+                      }}
+                      className={`w-2.5 h-2.5 rounded-full transition-all ${i === activeSlide ? "bg-gold w-6" : "bg-white/50 hover:bg-white/80"}`}
+                      data-ocid={`slider.item.${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
+  );
+}
+
+interface SlideProps {
+  slide: { title: string; description: string; imageUrl: string };
+}
+function SlideContent({ slide }: SlideProps) {
+  return (
+    <div className="relative w-full h-full">
+      <img
+        src={slide.imageUrl}
+        alt={slide.title}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/30 to-transparent" />
+      <div className="absolute bottom-10 left-8 right-8">
+        <h3 className="text-white font-bold text-2xl drop-shadow-lg">
+          {slide.title}
+        </h3>
+        {slide.description && (
+          <p className="text-white/80 mt-2 text-sm line-clamp-2">
+            {slide.description}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
