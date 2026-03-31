@@ -154,6 +154,7 @@ actor {
   stable var stableSliderBanners : [(Nat, SliderBanner)] = [];
   stable var stableNextSliderId : Nat = 0;
   stable var stableAdminPrincipal : ?Principal = null;
+  stable var adminPrincipal : ?Principal = null;
 
   // In-memory working copies - initialized from stable storage
   let articles = Map.empty<Nat, Article>();
@@ -178,7 +179,6 @@ actor {
   var programUnggulan : ProgramUnggulan = stableProgramUnggulan;
   var profile : Profile = stableProfile;
   var siteSettings : SiteSettings = stableSiteSettings;
-  var adminPrincipal : ?Principal = stableAdminPrincipal;
 
   // Load data from stable storage into working maps (runs on install AND upgrade)
   for ((k, v) in stableArticles.vals()) { articles.add(k, v) };
@@ -212,7 +212,6 @@ actor {
     stableProgramUnggulan := programUnggulan;
     stableProfile := profile;
     stableSiteSettings := siteSettings;
-    stableAdminPrincipal := adminPrincipal;
   };
 
   // Article CRUD
@@ -544,39 +543,4 @@ actor {
     sliderBanners.remove(id);
   };
 
-  // Admin principal management
-  public shared ({ caller }) func registerAdmin() : async Bool {
-    switch (adminPrincipal) {
-      case (null) {
-        adminPrincipal := ?caller;
-        true;
-      };
-      case (?_) { false };
-    };
-  };
-
-  public query func getAdminPrincipal() : async ?Principal {
-    adminPrincipal;
-  };
-
-  public query ({ caller }) func isAdmin() : async Bool {
-    switch (adminPrincipal) {
-      case (null) { false };
-      case (?ap) { ap == caller };
-    };
-  };
-
-  public shared ({ caller }) func resetAdmin() : async Bool {
-    switch (adminPrincipal) {
-      case (null) { false };
-      case (?ap) {
-        if (ap == caller) {
-          adminPrincipal := null;
-          true;
-        } else {
-          false;
-        };
-      };
-    };
-  };
 };
