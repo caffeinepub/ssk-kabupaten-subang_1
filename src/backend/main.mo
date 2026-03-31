@@ -3,6 +3,7 @@ import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Runtime "mo:core/Runtime";
+import Principal "mo:core/Principal";
 
 
 
@@ -154,7 +155,9 @@ actor {
   stable var stableSliderBanners : [(Nat, SliderBanner)] = [];
   stable var stableNextSliderId : Nat = 0;
   stable var stableAdminPrincipal : ?Principal = null;
-  stable var adminPrincipal : ?Principal = null;
+
+  // Admin principal (working copy)
+  var adminPrincipal : ?Principal = stableAdminPrincipal;
 
   // In-memory working copies - initialized from stable storage
   let articles = Map.empty<Nat, Article>();
@@ -212,6 +215,7 @@ actor {
     stableProgramUnggulan := programUnggulan;
     stableProfile := profile;
     stableSiteSettings := siteSettings;
+    stableAdminPrincipal := adminPrincipal;
   };
 
   // Article CRUD
@@ -541,6 +545,57 @@ actor {
   public shared ({ caller }) func deleteSliderBanner(id : Nat) : async () {
     if (not sliderBanners.containsKey(id)) { Runtime.trap("SliderBanner not found") };
     sliderBanners.remove(id);
+  };
+
+
+  // Admin management
+  func isAnonymous(p : Principal) : Bool {
+    p == Principal.fromText("2vxsx-fae")
+  };
+
+  public shared ({ caller }) func registerAdmin() : async Bool {
+    if (isAnonymous(caller)) { Runtime.trap("Anonymous caller tidak diizinkan") };
+    switch (adminPrincipal) {
+      case (?_existing) { false }; // admin already registered
+      case (null) {
+        adminPrincipal := ?caller;
+        true;
+      };
+    };
+  };
+
+  public query ({ caller }) func isCallerAdmin() : async Bool {
+    switch (adminPrincipal) {
+      case (null) { false };
+      case (?ap) { ap == caller };
+    };
+  };
+
+  public query func getAdminPrincipal() : async ?Principal {
+    adminPrincipal;
+  };
+
+  // resetAdmin: current admin can reset; any authenticated user can reset if current admin is anonymous
+  public shared ({ caller }) func resetAdmin() : async Bool {
+    if (isAnonymous(caller)) { Runtime.trap("Anonymous caller tidak diizinkan") };
+    switch (adminPrincipal) {
+      case (null) { false };
+      case (?ap) {
+        let currentIsAnonymous = isAnonymous(ap);
+        if (ap != caller and not currentIsAnonymous) {
+          Runtime.trap("Hanya admin saat ini yang dapat mereset")
+        };
+        adminPrincipal := null;
+        true;
+      };
+    };
+  };
+
+  // Emergency: force reset by any authenticated user (for recovery only)
+  public shared ({ caller }) func forceResetAdmin() : async Bool {
+    if (isAnonymous(caller)) { Runtime.trap("Anonymous caller tidak diizinkan") };
+    adminPrincipal := null;
+    true
   };
 
 };

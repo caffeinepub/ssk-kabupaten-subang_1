@@ -184,6 +184,7 @@ export interface _SERVICE {
   'getAllSliderBanners' : ActorMethod<[], Array<SliderBanner>>,
   'updateSliderBanner' : ActorMethod<[bigint, string, string, string, string, bigint], SliderBanner>,
   'registerAdmin' : ActorMethod<[], boolean>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
   'getAdminPrincipal' : ActorMethod<[], [Principal] | []>,
   'isAdmin' : ActorMethod<[], boolean>,
   'resetAdmin' : ActorMethod<[], boolean>,

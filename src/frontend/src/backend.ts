@@ -225,6 +225,11 @@ export interface backendInterface {
     updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
+    registerAdmin(): Promise<boolean>;
+    isCallerAdmin(): Promise<boolean>;
+    getAdminPrincipal(): Promise<[Principal] | []>;
+    resetAdmin(): Promise<boolean>;
+    forceResetAdmin(): Promise<boolean>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -828,6 +833,66 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.updateVideo(arg0, arg1, arg2, arg3);
             return result;
+        }
+    }
+    async registerAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await this.actor.registerAdmin();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.registerAdmin();
+        }
+    }
+    async isCallerAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await this.actor.isCallerAdmin();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.isCallerAdmin();
+        }
+    }
+    async getAdminPrincipal(): Promise<[Principal] | []> {
+        if (this.processError) {
+            try {
+                return await this.actor.getAdminPrincipal();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.getAdminPrincipal();
+        }
+    }
+    async resetAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await this.actor.resetAdmin();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.resetAdmin();
+        }
+    }
+    async forceResetAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await this.actor.forceResetAdmin();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.forceResetAdmin();
         }
     }
 }

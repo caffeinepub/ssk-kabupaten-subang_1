@@ -216,8 +216,9 @@ export const idlService = IDL.Service({
     ),
   'registerAdmin' : IDL.Func([], [IDL.Bool], []),
   'getAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
-  'isAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'resetAdmin' : IDL.Func([], [IDL.Bool], []),
+  'forceResetAdmin' : IDL.Func([], [IDL.Bool], []),
     'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
   'updateTeamMember' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],

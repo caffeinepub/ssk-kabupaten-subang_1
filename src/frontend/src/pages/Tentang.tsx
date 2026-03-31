@@ -1,6 +1,5 @@
 import { CheckCircle, Eye, Target } from "lucide-react";
 import { motion } from "motion/react";
-import { sampleTeamMembers } from "../data/sampleData";
 import { useTeamMembers } from "../hooks/useQueries";
 
 const misi = [
@@ -12,8 +11,7 @@ const misi = [
 
 export default function Tentang() {
   const { data: teamData } = useTeamMembers();
-  const teamMembers =
-    teamData && teamData.length > 0 ? teamData : sampleTeamMembers;
+  const teamMembers = teamData ?? [];
 
   return (
     <main>
@@ -119,34 +117,40 @@ export default function Tentang() {
             </h2>
             <div className="w-16 h-1 bg-gold mx-auto mt-3" />
           </motion.div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teamMembers.map((member, i) => (
-              <motion.div
-                key={member.id.toString()}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                data-ocid={`team.item.${i + 1}`}
-                className="bg-white border border-gray-100 rounded-lg p-6 shadow-card hover:shadow-lg transition-shadow text-center"
-              >
-                <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 ring-4 ring-gold/20">
-                  <img
-                    src={member.imageUrl}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="text-navy font-bold text-sm">{member.name}</h3>
-                <p className="text-gold text-xs font-semibold uppercase tracking-wide mt-1 mb-3">
-                  {member.role}
-                </p>
-                <p className="text-gray-500 text-xs leading-relaxed">
-                  {member.bio}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          {teamMembers.length === 0 ? (
+            <div data-ocid="team.empty_state" className="text-center py-12">
+              <p className="text-gray-400">Belum ada anggota tim tersedia.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {teamMembers.map((member, i) => (
+                <motion.div
+                  key={member.id.toString()}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  data-ocid={`team.item.${i + 1}`}
+                  className="bg-white border border-gray-100 rounded-lg p-6 shadow-card hover:shadow-lg transition-shadow text-center"
+                >
+                  <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 ring-4 ring-gold/20">
+                    <img
+                      src={member.imageUrl}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-navy font-bold text-sm">{member.name}</h3>
+                  <p className="text-gold text-xs font-semibold uppercase tracking-wide mt-1 mb-3">
+                    {member.role}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-relaxed">
+                    {member.bio}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </main>

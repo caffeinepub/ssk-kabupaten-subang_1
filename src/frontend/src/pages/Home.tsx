@@ -13,7 +13,6 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import type { Article } from "../backend.d";
-import { sampleArticles, sampleTeamMembers } from "../data/sampleData";
 import {
   useAllArticles,
   useAllSliderBanners,
@@ -95,10 +94,8 @@ export default function Home() {
       label: "Kecamatan Terlayani",
     },
   ];
-  const articles: Article[] =
-    articlesData && articlesData.length > 0 ? articlesData : sampleArticles;
-  const teamMembers =
-    teamData && teamData.length > 0 ? teamData : sampleTeamMembers;
+  const articles: Article[] = articlesData ?? [];
+  const teamMembers = teamData ?? [];
   const latestNews = articles.slice(0, 3);
 
   return (
@@ -266,55 +263,64 @@ export default function Home() {
             </h2>
             <div className="w-16 h-1 bg-gold mx-auto mt-3" />
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {latestNews.map((article, i) => (
-              <motion.div
-                key={article.id.toString()}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                data-ocid={`news.item.${i + 1}`}
-                className="bg-white rounded-lg overflow-hidden shadow-card hover:shadow-lg transition-shadow"
-              >
-                <div className="relative">
-                  <img
-                    src={
-                      article.imageUrl ||
-                      `/assets/generated/ssk-news-${(i % 3) + 1}.dim_800x450.jpg`
-                    }
-                    alt={article.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <span className="absolute top-3 left-3 bg-gold text-navy text-xs font-bold px-2 py-1 rounded">
-                    {article.category}
-                  </span>
-                  <span className="absolute top-3 right-3 bg-navy text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center">
-                    {i + 1}
-                  </span>
-                </div>
-                <div className="p-5">
-                  <p className="text-gray-400 text-xs mb-2">
-                    {formatDate(article.date)}
-                  </p>
-                  <h3 className="text-navy font-bold text-sm leading-snug mb-2 line-clamp-2">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-3">
-                    {article.excerpt}
-                  </p>
-                  <Link
-                    to="/berita/$id"
-                    params={{ id: article.id.toString() }}
-                    data-ocid={`news.read_more.${i + 1}.link`}
-                    className="text-gold font-semibold text-xs uppercase tracking-wide hover:text-gold-dark flex items-center gap-1"
-                  >
-                    Baca Selengkapnya <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {latestNews.length === 0 ? (
+            <div
+              data-ocid="home.news.empty_state"
+              className="text-center py-12"
+            >
+              <p className="text-gray-400">Belum ada berita tersedia.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {latestNews.map((article, i) => (
+                <motion.div
+                  key={article.id.toString()}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  data-ocid={`news.item.${i + 1}`}
+                  className="bg-white rounded-lg overflow-hidden shadow-card hover:shadow-lg transition-shadow"
+                >
+                  <div className="relative">
+                    <img
+                      src={
+                        article.imageUrl ||
+                        `/assets/generated/ssk-news-${(i % 3) + 1}.dim_800x450.jpg`
+                      }
+                      alt={article.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <span className="absolute top-3 left-3 bg-gold text-navy text-xs font-bold px-2 py-1 rounded">
+                      {article.category}
+                    </span>
+                    <span className="absolute top-3 right-3 bg-navy text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-gray-400 text-xs mb-2">
+                      {formatDate(article.date)}
+                    </p>
+                    <h3 className="text-navy font-bold text-sm leading-snug mb-2 line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-3">
+                      {article.excerpt}
+                    </p>
+                    <Link
+                      to="/berita/$id"
+                      params={{ id: article.id.toString() }}
+                      data-ocid={`news.read_more.${i + 1}.link`}
+                      className="text-gold font-semibold text-xs uppercase tracking-wide hover:text-gold-dark flex items-center gap-1"
+                    >
+                      Baca Selengkapnya <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
           <div className="text-center mt-8">
             <Link
               to="/berita"
@@ -341,30 +347,39 @@ export default function Home() {
             </h2>
             <div className="w-16 h-1 bg-gold mx-auto mt-3" />
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
-            {teamMembers.slice(0, 6).map((member, i) => (
-              <motion.div
-                key={member.id.toString()}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="text-center"
-              >
-                <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 ring-4 ring-gold/20">
-                  <img
-                    src={member.imageUrl}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="text-navy font-bold text-xs leading-snug">
-                  {member.name}
-                </p>
-                <p className="text-gray-500 text-xs mt-0.5">{member.role}</p>
-              </motion.div>
-            ))}
-          </div>
+          {teamMembers.length === 0 ? (
+            <div
+              data-ocid="home.team.empty_state"
+              className="text-center py-12"
+            >
+              <p className="text-gray-400">Belum ada anggota tim tersedia.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+              {teamMembers.slice(0, 6).map((member, i) => (
+                <motion.div
+                  key={member.id.toString()}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="text-center"
+                >
+                  <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 ring-4 ring-gold/20">
+                    <img
+                      src={member.imageUrl}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="text-navy font-bold text-xs leading-snug">
+                    {member.name}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-0.5">{member.role}</p>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

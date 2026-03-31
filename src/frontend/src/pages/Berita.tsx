@@ -3,7 +3,6 @@ import { ArrowRight, Calendar, Tag } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import type { Article } from "../backend.d";
-import { blogArticles, sampleArticles } from "../data/sampleData";
 import { useAllArticles } from "../hooks/useQueries";
 
 const categories = [
@@ -29,10 +28,7 @@ export default function Berita() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const { data: articlesData } = useAllArticles();
 
-  const allArticles: Article[] =
-    articlesData && articlesData.length > 0
-      ? articlesData
-      : [...sampleArticles, ...blogArticles];
+  const allArticles: Article[] = articlesData ?? [];
 
   const filtered =
     activeCategory === "Semua"

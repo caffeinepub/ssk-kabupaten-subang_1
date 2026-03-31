@@ -2,7 +2,6 @@ import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Calendar, Tag } from "lucide-react";
 import { motion } from "motion/react";
 import type { Article } from "../backend.d";
-import { blogArticles, sampleArticles } from "../data/sampleData";
 import { useAllArticles } from "../hooks/useQueries";
 
 function formatDate(time: bigint) {
@@ -25,10 +24,7 @@ export default function BeritaDetail() {
   const { id } = useParams({ strict: false }) as { id?: string };
   const { data: articlesData } = useAllArticles();
 
-  const allArticles: Article[] =
-    articlesData && articlesData.length > 0
-      ? articlesData
-      : [...sampleArticles, ...blogArticles];
+  const allArticles: Article[] = articlesData ?? [];
 
   const article = allArticles.find((a) => a.id.toString() === id);
   const related = allArticles.filter((a) => a.id.toString() !== id).slice(0, 3);
