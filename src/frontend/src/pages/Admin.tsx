@@ -32,7 +32,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
   Activity,
@@ -229,7 +229,84 @@ export default function Admin() {
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Version 17: all authenticated Internet Identity users can access admin panel
+  // Single-admin enforcement
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
+  const [registeringAdmin, setRegisteringAdmin] = useState(false);
+  const [adminExists, setAdminExists] = useState<boolean | null>(null);
+
+  const checkAdminStatus = useCallback(async () => {
+    if (!actor || !isAuthenticated) return;
+    setCheckingAdmin(true);
+    try {
+      const adminPrincipal = await actor.getAdminPrincipal();
+      const registered = adminPrincipal.length > 0;
+      setAdminExists(registered);
+      if (registered) {
+        const callerIsAdmin = await actor.isCallerAdmin();
+        setIsAdmin(callerIsAdmin);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch {
+      setIsAdmin(false);
+    } finally {
+      setCheckingAdmin(false);
+    }
+  }, [actor, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && actor) {
+      checkAdminStatus();
+    } else {
+      setIsAdmin(null);
+      setAdminExists(null);
+    }
+  }, [isAuthenticated, actor, checkAdminStatus]);
+
+  const handleRegisterAdmin = async () => {
+    if (!actor) return;
+    setRegisteringAdmin(true);
+    try {
+      const result = await actor.registerAdmin();
+      if (result) {
+        toast.success("Berhasil terdaftar sebagai admin!");
+        await checkAdminStatus();
+      } else {
+        toast.error("Admin sudah terdaftar oleh akun lain.");
+        await checkAdminStatus();
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Gagal mendaftar: ${msg}`);
+    } finally {
+      setRegisteringAdmin(false);
+    }
+  };
+
+  const handleForceReset = async () => {
+    if (!actor) return;
+    try {
+      await actor.forceResetAdmin();
+      toast.success("Admin direset. Silakan daftarkan akun Anda.");
+      await checkAdminStatus();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Gagal reset: ${msg}`);
+    }
+  };
+
+  const handleResetAdmin = async () => {
+    if (!actor) return;
+    try {
+      await actor.resetAdmin();
+      toast.success("Admin berhasil direset.");
+      await checkAdminStatus();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Gagal reset admin: ${msg}`);
+    }
+  };
 
   // ---- Articles state ----
   const { data: articles = [], isLoading: articlesLoading } = useAllArticles();
@@ -874,12 +951,20 @@ export default function Admin() {
                 <p className="text-sm text-gray-300">SSK Kabupaten Subang</p>
               </div>
             </div>
-            {isAuthenticated && (
+            {isAuthenticated && isAdmin && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-400 hidden sm:block">
                   {identity?.getPrincipal().toString().slice(0, 20)}…
                 </span>
-
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetAdmin}
+                  className="border-red-400/50 text-red-400 hover:bg-red-500 hover:text-white text-xs"
+                  data-ocid="admin.reset_button"
+                >
+                  Reset Admin
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -934,6 +1019,88 @@ export default function Admin() {
                       Identity
                     </>
                   )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : checkingAdmin ? (
+          <div
+            className="flex items-center justify-center py-32"
+            data-ocid="admin.checking_admin"
+          >
+            <Loader2 className="w-8 h-8 animate-spin text-navy" />
+            <span className="ml-3 text-navy">Memeriksa akses admin...</span>
+          </div>
+        ) : !isAdmin && !adminExists ? (
+          <div className="flex items-center justify-center py-24">
+            <Card className="w-full max-w-sm shadow-lg border-0">
+              <CardHeader className="text-center pb-2">
+                <div className="w-16 h-16 bg-navy rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-gold" />
+                </div>
+                <CardTitle className="text-navy text-xl">
+                  Daftar Sebagai Admin
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Belum ada admin yang terdaftar. Klik tombol di bawah untuk
+                  mendaftarkan akun Anda sebagai admin pertama.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                <Button
+                  className="w-full bg-navy hover:bg-navy/90 text-white"
+                  onClick={handleRegisterAdmin}
+                  disabled={registeringAdmin}
+                  data-ocid="admin.register_button"
+                >
+                  {registeringAdmin ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Mendaftarkan...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Daftarkan sebagai Admin
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-red-300 text-red-500 hover:bg-red-50"
+                  onClick={clear}
+                >
+                  <LogOut className="w-4 h-4 mr-1" /> Keluar
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : !isAdmin ? (
+          <div className="flex items-center justify-center py-24">
+            <Card className="w-full max-w-sm shadow-lg border-0">
+              <CardHeader className="text-center pb-2">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-red-500" />
+                </div>
+                <CardTitle className="text-red-600 text-xl">
+                  Akses Ditolak
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Akun Anda tidak terdaftar sebagai admin. Hanya satu akun admin
+                  yang diizinkan.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                <Button
+                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold"
+                  onClick={handleForceReset}
+                  data-ocid="admin.force_reset_button"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Ambil Alih sebagai Admin
+                </Button>
+                <Button variant="outline" className="w-full" onClick={clear}>
+                  <LogOut className="w-4 h-4 mr-1" /> Keluar
                 </Button>
               </CardContent>
             </Card>
