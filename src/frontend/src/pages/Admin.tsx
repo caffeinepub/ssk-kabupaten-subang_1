@@ -32,7 +32,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import type {
   Activity,
@@ -45,7 +45,6 @@ import type {
   TeamMember,
   VideoYoutube,
 } from "../backend.d";
-import { createActorWithConfig } from "../config";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
@@ -230,102 +229,7 @@ export default function Admin() {
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // ---- Admin access control ----
-  const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
-  const [adminExists, setAdminExists] = useState<boolean | null>(null);
-  const [checkingAdmin, setCheckingAdmin] = useState(false);
-  const [registeringAdmin, setRegisteringAdmin] = useState(false);
-  const [registerError, setRegisterError] = useState("");
-
-  const checkAdminStatus = async () => {
-    if (!isAuthenticated || !identity) {
-      setIsAdminUser(null);
-      setAdminExists(null);
-      return;
-    }
-    setCheckingAdmin(true);
-    try {
-      // Always use fresh actor with current identity for admin checks
-      const freshActor = await createActorWithConfig({
-        agentOptions: { identity },
-      });
-      const [isAdmin, adminPrincipal] = await Promise.all([
-        freshActor.isCallerAdmin(),
-        freshActor.getAdminPrincipal(),
-      ]);
-      setIsAdminUser(isAdmin);
-      setAdminExists(adminPrincipal.length > 0);
-    } catch {
-      setIsAdminUser(null);
-      setAdminExists(null);
-    } finally {
-      setCheckingAdmin(false);
-    }
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: checkAdminStatus is stable, identity/isAuthenticated are the true triggers
-  useEffect(() => {
-    if (!isAuthenticated || !identity) {
-      setIsAdminUser(null);
-      setAdminExists(null);
-      return;
-    }
-    checkAdminStatus();
-  }, [identity, isAuthenticated]);
-
-  const handleRegisterAdmin = async () => {
-    if (!isAuthenticated || !identity) {
-      setRegisterError("Anda harus login terlebih dahulu.");
-      return;
-    }
-    setRegisteringAdmin(true);
-    setRegisterError("");
-    try {
-      // Use fresh actor with current identity to avoid stale actor issue
-      const freshActor = await createActorWithConfig({
-        agentOptions: { identity },
-      });
-      const result = await freshActor.registerAdmin();
-      if (result) {
-        await checkAdminStatus();
-      } else {
-        setRegisterError(
-          "Admin sudah terdaftar. Hubungi admin saat ini atau gunakan tombol Reset Admin di bawah.",
-        );
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setRegisterError(`Gagal mendaftar: ${msg}`);
-    } finally {
-      setRegisteringAdmin(false);
-    }
-  };
-
-  const handleResetAdmin = async () => {
-    if (!isAuthenticated || !identity) return;
-    try {
-      const freshActor = await createActorWithConfig({
-        agentOptions: { identity },
-      });
-      await freshActor.resetAdmin();
-      setIsAdminUser(false);
-      setAdminExists(false);
-    } catch {
-      // If resetAdmin fails (e.g. we are not the current admin), try forceResetAdmin
-      try {
-        if (isAuthenticated && identity) {
-          const freshActor = await createActorWithConfig({
-            agentOptions: { identity },
-          });
-          await freshActor.forceResetAdmin();
-          setIsAdminUser(false);
-          setAdminExists(false);
-        }
-      } catch {
-        toast.error("Gagal mereset admin. Hubungi administrator.");
-      }
-    }
-  };
+  // Version 17: all authenticated Internet Identity users can access admin panel
 
   // ---- Articles state ----
   const { data: articles = [], isLoading: articlesLoading } = useAllArticles();
@@ -975,17 +879,7 @@ export default function Admin() {
                 <span className="text-xs text-gray-400 hidden sm:block">
                   {identity?.getPrincipal().toString().slice(0, 20)}…
                 </span>
-                {isAdminUser && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetAdmin}
-                    className="border-red-400/50 text-red-400 hover:bg-red-500 hover:text-white hidden sm:flex"
-                    title="Reset Admin"
-                  >
-                    Reset Admin
-                  </Button>
-                )}
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -1040,95 +934,6 @@ export default function Admin() {
                       Identity
                     </>
                   )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : isAdminUser === null || checkingAdmin ? (
-          <div className="flex items-center justify-center py-32">
-            <Loader2 className="w-8 h-8 animate-spin text-navy" />
-          </div>
-        ) : !adminExists ? (
-          <div className="flex items-center justify-center py-24">
-            <Card className="w-full max-w-sm shadow-lg border-0">
-              <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-navy rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-gold" />
-                </div>
-                <CardTitle className="text-navy text-xl">
-                  Daftar sebagai Admin
-                </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                  Belum ada admin terdaftar. Akun Anda akan menjadi admin
-                  pertama dan satu-satunya.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                {registerError && (
-                  <p className="text-red-500 text-sm text-center">
-                    {registerError}
-                  </p>
-                )}
-                <Button
-                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold"
-                  onClick={handleRegisterAdmin}
-                  disabled={registeringAdmin}
-                >
-                  {registeringAdmin ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                      Mendaftar…
-                    </>
-                  ) : (
-                    "Daftarkan sebagai Admin"
-                  )}
-                </Button>
-                <Button variant="outline" className="w-full" onClick={clear}>
-                  Keluar
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : !isAdminUser ? (
-          <div className="flex items-center justify-center py-24">
-            <Card className="w-full max-w-sm shadow-lg border-0">
-              <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-red-500" />
-                </div>
-                <CardTitle className="text-red-600 text-xl">
-                  Akses Ditolak
-                </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                  Anda tidak memiliki akses ke panel admin. Hanya admin yang
-                  terdaftar yang dapat mengakses halaman ini.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                <p className="text-xs text-gray-400 text-center">
-                  Jika Anda adalah pemilik situs, gunakan tombol di bawah untuk
-                  mengambil alih akses admin.
-                </p>
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={async () => {
-                    if (
-                      window.confirm(
-                        "Ini akan menghapus admin saat ini dan mendaftarkan akun Anda sebagai admin baru. Lanjutkan?",
-                      )
-                    ) {
-                      await handleResetAdmin();
-                      await new Promise((r) => setTimeout(r, 500));
-                      await handleRegisterAdmin();
-                      await checkAdminStatus();
-                    }
-                  }}
-                >
-                  Ambil Alih sebagai Admin
-                </Button>
-                <Button variant="outline" className="w-full" onClick={clear}>
-                  Keluar
                 </Button>
               </CardContent>
             </Card>

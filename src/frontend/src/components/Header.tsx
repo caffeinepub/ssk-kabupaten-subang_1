@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Settings, Shield, X } from "lucide-react";
+import { Menu, Search, Shield, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useSiteSettings } from "../hooks/useQueries";
@@ -84,18 +84,6 @@ export default function Header() {
                   Cari
                 </span>
               </div>
-              <Link
-                to="/admin"
-                data-ocid="nav.admin.link"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wide border transition-colors ${
-                  currentPath === "/admin"
-                    ? "bg-gold text-navy border-gold"
-                    : "border-gold text-gold hover:bg-gold hover:text-navy"
-                }`}
-              >
-                <Settings className="w-3.5 h-3.5" />
-                Admin
-              </Link>
             </div>
 
             {/* Mobile hamburger */}
@@ -138,18 +126,6 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 py-3 text-sm font-semibold uppercase tracking-wide ${
-                    currentPath === "/admin"
-                      ? "text-gold"
-                      : "text-gold hover:text-yellow-300"
-                  }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  Panel Admin
-                </Link>
               </div>
             </motion.div>
           )}
