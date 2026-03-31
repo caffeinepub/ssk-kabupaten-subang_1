@@ -225,7 +225,7 @@ const formatDate = (ts: bigint) => {
 export default function Admin() {
   const { login, clear, isLoggingIn, isInitializing, identity } =
     useInternetIdentity();
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
@@ -233,6 +233,7 @@ export default function Admin() {
   const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
   const [adminRegistered, setAdminRegistered] = useState<boolean | null>(null);
   const [resetAdminDialogOpen, setResetAdminDialogOpen] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !actor) {
@@ -256,9 +257,15 @@ export default function Admin() {
   }, [isAuthenticated, actor]);
 
   const handleRegisterAdmin = async () => {
-    if (!actor) return;
+    if (!actor || isRegistering) return;
+    setIsRegistering(true);
     try {
-      await (actor as any).registerAdmin();
+      const result = await (actor as any).registerAdmin();
+      if (!result) {
+        toast.error("Admin sudah terdaftar. Tidak bisa mendaftar ulang.");
+        setIsRegistering(false);
+        return;
+      }
       const [adminCheck, adminPrincipal] = await Promise.all([
         (actor as any).isAdmin(),
         (actor as any).getAdminPrincipal(),
@@ -266,8 +273,11 @@ export default function Admin() {
       setAdminRegistered(adminPrincipal.length > 0);
       setIsAdminUser(!!adminCheck);
       toast.success("Berhasil didaftarkan sebagai admin!");
-    } catch {
-      toast.error("Gagal mendaftarkan admin");
+    } catch (err) {
+      console.error("registerAdmin error:", err);
+      toast.error(`Gagal mendaftarkan admin: ${String(err)}`);
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -990,7 +1000,7 @@ export default function Admin() {
               </CardContent>
             </Card>
           </div>
-        ) : isAdminUser === null ? (
+        ) : isAdminUser === null || (isAuthenticated && actorFetching) ? (
           <div
             className="flex items-center justify-center py-32"
             data-ocid="admin.loading_state"
@@ -1015,12 +1025,22 @@ export default function Admin() {
               </CardHeader>
               <CardContent className="pt-4 space-y-3">
                 <Button
-                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold"
+                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold disabled:opacity-60"
                   onClick={handleRegisterAdmin}
+                  disabled={isRegistering || actorFetching || !actor}
                   data-ocid="admin.register_button"
                 >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Daftarkan sebagai Admin
+                  {isRegistering ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Mendaftarkan...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Daftarkan sebagai Admin
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"
