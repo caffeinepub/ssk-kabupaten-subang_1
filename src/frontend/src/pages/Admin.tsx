@@ -32,7 +32,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import type {
   Activity,
@@ -222,91 +222,68 @@ const formatDate = (ts: bigint) => {
   }
 };
 
+function ResetAdminInline({
+  actor,
+  onReset,
+}: { actor: any; onReset: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+
+  const handleReset = async () => {
+    if (!confirm) {
+      setConfirm(true);
+      return;
+    }
+    setLoading(true);
+    try {
+      await actor?.resetAdmin();
+      toast.success(
+        "Admin berhasil di-reset. Silakan daftar ulang sebagai admin.",
+      );
+      onReset();
+      setConfirm(false);
+    } catch {
+      toast.error("Gagal mereset admin.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={handleReset}
+        disabled={loading}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Mereset...
+          </>
+        ) : confirm ? (
+          "Konfirmasi Reset Admin"
+        ) : (
+          "Reset Admin"
+        )}
+      </Button>
+      {confirm && !loading && (
+        <Button variant="outline" size="sm" onClick={() => setConfirm(false)}>
+          Batal
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const { login, clear, isLoggingIn, isInitializing, identity } =
     useInternetIdentity();
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
-
-  // Single-admin enforcement
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [checkingAdmin, setCheckingAdmin] = useState(false);
-  const [registeringAdmin, setRegisteringAdmin] = useState(false);
-  const [adminExists, setAdminExists] = useState<boolean | null>(null);
-
-  const checkAdminStatus = useCallback(async () => {
-    if (!actor || !isAuthenticated) return;
-    setCheckingAdmin(true);
-    try {
-      const adminPrincipal = await actor.getAdminPrincipal();
-      const registered = adminPrincipal.length > 0;
-      setAdminExists(registered);
-      if (registered) {
-        const callerIsAdmin = await actor.isCallerAdmin();
-        setIsAdmin(callerIsAdmin);
-      } else {
-        setIsAdmin(false);
-      }
-    } catch {
-      setIsAdmin(false);
-    } finally {
-      setCheckingAdmin(false);
-    }
-  }, [actor, isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated && actor) {
-      checkAdminStatus();
-    } else {
-      setIsAdmin(null);
-      setAdminExists(null);
-    }
-  }, [isAuthenticated, actor, checkAdminStatus]);
-
-  const handleRegisterAdmin = async () => {
-    if (!actor) return;
-    setRegisteringAdmin(true);
-    try {
-      const result = await actor.registerAdmin();
-      if (result) {
-        toast.success("Berhasil terdaftar sebagai admin!");
-        await checkAdminStatus();
-      } else {
-        toast.error("Admin sudah terdaftar oleh akun lain.");
-        await checkAdminStatus();
-      }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`Gagal mendaftar: ${msg}`);
-    } finally {
-      setRegisteringAdmin(false);
-    }
-  };
-
-  const handleForceReset = async () => {
-    if (!actor) return;
-    try {
-      await actor.forceResetAdmin();
-      toast.success("Admin direset. Silakan daftarkan akun Anda.");
-      await checkAdminStatus();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`Gagal reset: ${msg}`);
-    }
-  };
-
-  const handleResetAdmin = async () => {
-    if (!actor) return;
-    try {
-      await actor.resetAdmin();
-      toast.success("Admin berhasil direset.");
-      await checkAdminStatus();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`Gagal reset admin: ${msg}`);
-    }
-  };
 
   // ---- Articles state ----
   const { data: articles = [], isLoading: articlesLoading } = useAllArticles();
@@ -951,20 +928,11 @@ export default function Admin() {
                 <p className="text-sm text-gray-300">SSK Kabupaten Subang</p>
               </div>
             </div>
-            {isAuthenticated && isAdmin && (
+            {isAuthenticated && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-400 hidden sm:block">
                   {identity?.getPrincipal().toString().slice(0, 20)}…
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetAdmin}
-                  className="border-red-400/50 text-red-400 hover:bg-red-500 hover:text-white text-xs"
-                  data-ocid="admin.reset_button"
-                >
-                  Reset Admin
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1019,88 +987,6 @@ export default function Admin() {
                       Identity
                     </>
                   )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : checkingAdmin ? (
-          <div
-            className="flex items-center justify-center py-32"
-            data-ocid="admin.checking_admin"
-          >
-            <Loader2 className="w-8 h-8 animate-spin text-navy" />
-            <span className="ml-3 text-navy">Memeriksa akses admin...</span>
-          </div>
-        ) : !isAdmin && !adminExists ? (
-          <div className="flex items-center justify-center py-24">
-            <Card className="w-full max-w-sm shadow-lg border-0">
-              <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-navy rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-gold" />
-                </div>
-                <CardTitle className="text-navy text-xl">
-                  Daftar Sebagai Admin
-                </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                  Belum ada admin yang terdaftar. Klik tombol di bawah untuk
-                  mendaftarkan akun Anda sebagai admin pertama.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                <Button
-                  className="w-full bg-navy hover:bg-navy/90 text-white"
-                  onClick={handleRegisterAdmin}
-                  disabled={registeringAdmin}
-                  data-ocid="admin.register_button"
-                >
-                  {registeringAdmin ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Mendaftarkan...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Daftarkan sebagai Admin
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-red-300 text-red-500 hover:bg-red-50"
-                  onClick={clear}
-                >
-                  <LogOut className="w-4 h-4 mr-1" /> Keluar
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : !isAdmin ? (
-          <div className="flex items-center justify-center py-24">
-            <Card className="w-full max-w-sm shadow-lg border-0">
-              <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-red-500" />
-                </div>
-                <CardTitle className="text-red-600 text-xl">
-                  Akses Ditolak
-                </CardTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                  Akun Anda tidak terdaftar sebagai admin. Hanya satu akun admin
-                  yang diizinkan.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                <Button
-                  className="w-full bg-gold hover:bg-gold/90 text-navy font-semibold"
-                  onClick={handleForceReset}
-                  data-ocid="admin.force_reset_button"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Ambil Alih sebagai Admin
-                </Button>
-                <Button variant="outline" className="w-full" onClick={clear}>
-                  <LogOut className="w-4 h-4 mr-1" /> Keluar
                 </Button>
               </CardContent>
             </Card>
@@ -1196,6 +1082,13 @@ export default function Admin() {
                   data-ocid="admin.slider.tab"
                 >
                   Slider Banner
+                </TabsTrigger>
+                <TabsTrigger
+                  value="kelola-admin"
+                  className="data-[state=active]:bg-navy data-[state=active]:text-white"
+                  data-ocid="admin.kelola_admin.tab"
+                >
+                  Kelola Admin
                 </TabsTrigger>
               </TabsList>
 
@@ -2708,6 +2601,116 @@ export default function Admin() {
                         </TableBody>
                       </Table>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ---- KELOLA ADMIN TAB ---- */}
+              <TabsContent value="kelola-admin" className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-navy">
+                    Kelola Manajemen Admin
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Informasi dan pengaturan akun admin sistem
+                  </p>
+                </div>
+
+                {/* Info Admin Aktif */}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-navy text-base flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-gold" />
+                      Informasi Admin Aktif
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-navy/5 rounded-lg p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <span className="text-sm font-medium text-gray-600 w-32">
+                          Status
+                        </span>
+                        <Badge className="bg-green-100 text-green-800 border-green-200 w-fit">
+                          Aktif
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <span className="text-sm font-medium text-gray-600 w-32">
+                          Principal ID
+                        </span>
+                        <span className="text-sm font-mono text-gray-800 break-all">
+                          {identity?.getPrincipal().toString()}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <span className="text-sm font-medium text-gray-600 w-32">
+                          Tipe Akses
+                        </span>
+                        <span className="text-sm text-gray-800">
+                          Internet Identity
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Hak Akses */}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-navy text-base">
+                      Hak Akses Admin
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {[
+                        "Kelola Berita",
+                        "Kelola Anggota Tim",
+                        "Kelola Kegiatan",
+                        "Kelola Kontak",
+                        "Kelola Program Unggulan",
+                        "Kelola Video YouTube",
+                        "Kelola Profil",
+                        "Kelola Galeri",
+                        "Kelola Pendaftaran",
+                        "Kelola Satuan SSK",
+                        "Pengaturan Logo",
+                        "Kelola Slider Banner",
+                      ].map((hak) => (
+                        <div
+                          key={hak}
+                          className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                          <span className="text-xs text-green-800">{hak}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Zona Berbahaya */}
+                <Card className="border-0 shadow-sm border-red-100">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-red-600 text-base">
+                      Zona Berbahaya
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-red-700 mb-1">
+                        Reset Admin
+                      </h4>
+                      <p className="text-xs text-red-600 mb-3">
+                        Menghapus akun admin saat ini dari sistem. Setelah
+                        di-reset, siapa pun yang login pertama kali dapat
+                        mendaftar sebagai admin baru.
+                      </p>
+                      <ResetAdminInline
+                        actor={actor}
+                        onReset={() => queryClient.invalidateQueries()}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

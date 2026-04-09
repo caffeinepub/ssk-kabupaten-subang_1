@@ -84,6 +84,13 @@ export default function Header() {
                   Cari
                 </span>
               </div>
+              <Link
+                to="/admin"
+                data-ocid="nav.admin.link"
+                className="px-3 py-1 text-xs font-bold uppercase tracking-wide border border-gold text-gold hover:bg-gold hover:text-navy rounded transition-colors"
+              >
+                Admin
+              </Link>
             </div>
 
             {/* Mobile hamburger */}
@@ -126,6 +133,14 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  data-ocid="nav.mobile.admin.link"
+                  className="block py-3 text-sm font-bold uppercase tracking-wide text-gold hover:text-gold/80"
+                >
+                  Admin
+                </Link>
               </div>
             </motion.div>
           )}
