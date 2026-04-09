@@ -1,4 +1,4 @@
-import type { Article, TeamMember } from "../backend.d";
+import type { Article, TeamMember } from "../types/backend";
 
 export const sampleArticles: Article[] = [
   {

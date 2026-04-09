@@ -8,23 +8,16 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 export interface SliderBanner {
-  id: bigint;
-  title: string;
-  description: string;
-  imageUrl: string;
-  linkUrl: string;
-  urutan: bigint;
-}
-export interface SiteSettings {
-    logoUrl: string;
-}
-export type Time = bigint;
-export interface Activity {
     id: bigint;
     title: string;
-    date: Time;
+    linkUrl: string;
     description: string;
-    location: string;
+    imageUrl: string;
+    urutan: bigint;
+}
+export type Time = bigint;
+export interface SiteSettings {
+    logoUrl: string;
 }
 export interface GaleriItem {
     id: bigint;
@@ -47,6 +40,13 @@ export interface ProgramUnggulan {
     penghargaan: string;
     programKegiatan: string;
     pesertaTerlatih: string;
+}
+export interface Activity {
+    id: bigint;
+    title: string;
+    date: Time;
+    description: string;
+    location: string;
 }
 export interface TeamMember {
     id: bigint;
@@ -106,22 +106,25 @@ export interface backendInterface {
     createPendaftaran(nama: string, nik: string, alamat: string, phone: string, email: string, pekerjaan: string, alasan: string): Promise<PendaftaranAnggota>;
     createSatuanSSK(nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
     createSliderBanner(title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
-  createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
+    createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     createVideo(title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
     deleteActivity(id: bigint): Promise<void>;
-  deleteSliderBanner(id: bigint): Promise<void>;
     deleteArticle(id: bigint): Promise<void>;
     deleteGaleriItem(id: bigint): Promise<void>;
     deletePendaftaran(id: bigint): Promise<void>;
     deleteSatuanSSK(id: bigint): Promise<void>;
+    deleteSliderBanner(id: bigint): Promise<void>;
     deleteTeamMember(id: bigint): Promise<void>;
     deleteVideo(id: bigint): Promise<void>;
+    forceResetAdmin(): Promise<boolean>;
     getActivity(id: bigint): Promise<Activity>;
+    getAdminPrincipal(): Promise<Principal | null>;
     getAllActivities(): Promise<Array<Activity>>;
     getAllArticles(): Promise<Array<Article>>;
     getAllGaleriItems(): Promise<Array<GaleriItem>>;
     getAllPendaftaran(): Promise<Array<PendaftaranAnggota>>;
     getAllSatuanSSK(): Promise<Array<SatuanSSK>>;
+    getAllSliderBanners(): Promise<Array<SliderBanner>>;
     getAllTeamMembers(): Promise<Array<TeamMember>>;
     getAllVideos(): Promise<Array<VideoYoutube>>;
     getArticle(id: bigint): Promise<Article>;
@@ -130,6 +133,9 @@ export interface backendInterface {
     getProgramUnggulan(): Promise<ProgramUnggulan>;
     getSiteSettings(): Promise<SiteSettings>;
     getTeamMember(id: bigint): Promise<TeamMember>;
+    isCallerAdmin(): Promise<boolean>;
+    registerAdmin(): Promise<boolean>;
+    resetAdmin(): Promise<boolean>;
     updateActivity(id: bigint, title: string, description: string, date: Time, location: string): Promise<Activity>;
     updateArticle(id: bigint, title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
     updateContactInfo(address: string, phone: string, email: string, operationalHours: string): Promise<ContactInfo>;
@@ -138,14 +144,8 @@ export interface backendInterface {
     updateProfile(namaOrganisasi: string, tagline: string, deskripsi: string, visi: string, misi: string): Promise<Profile>;
     updateProgramUnggulan(judul: string, deskripsi: string, pesertaTerlatih: string, programKegiatan: string, penghargaan: string, kecamatanTerlayani: string): Promise<ProgramUnggulan>;
     updateSatuanSSK(id: bigint, nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
+    updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateSliderBanner(id: bigint, title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
-  updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
-    registerAdmin(): Promise<boolean>;
-    isCallerAdmin(): Promise<boolean>;
-    getAdminPrincipal(): Promise<[Principal] | []>;
-    isAdmin(): Promise<boolean>;
-    resetAdmin(): Promise<boolean>;
-    forceResetAdmin(): Promise<boolean>;
 }

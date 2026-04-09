@@ -78,6 +78,14 @@ export interface SatuanSSK {
   'ketua' : string,
 }
 export interface SiteSettings { 'logoUrl' : string }
+export interface SliderBanner {
+  'id' : bigint,
+  'title' : string,
+  'linkUrl' : string,
+  'description' : string,
+  'imageUrl' : string,
+  'urutan' : bigint,
+}
 export interface TeamMember {
   'id' : bigint,
   'bio' : string,
@@ -91,14 +99,6 @@ export interface VideoYoutube {
   'title' : string,
   'description' : string,
   'youtubeId' : string,
-}
-export interface SliderBanner {
-  'id' : bigint,
-  'title' : string,
-  'description' : string,
-  'imageUrl' : string,
-  'linkUrl' : string,
-  'urutan' : bigint,
 }
 export interface _SERVICE {
   'createActivity' : ActorMethod<[string, string, Time, string], Activity>,
@@ -118,6 +118,10 @@ export interface _SERVICE {
     [string, string, string, string, string, string, string],
     SatuanSSK
   >,
+  'createSliderBanner' : ActorMethod<
+    [string, string, string, string, bigint],
+    SliderBanner
+  >,
   'createTeamMember' : ActorMethod<
     [string, string, string, string],
     TeamMember
@@ -128,14 +132,18 @@ export interface _SERVICE {
   'deleteGaleriItem' : ActorMethod<[bigint], undefined>,
   'deletePendaftaran' : ActorMethod<[bigint], undefined>,
   'deleteSatuanSSK' : ActorMethod<[bigint], undefined>,
+  'deleteSliderBanner' : ActorMethod<[bigint], undefined>,
   'deleteTeamMember' : ActorMethod<[bigint], undefined>,
   'deleteVideo' : ActorMethod<[bigint], undefined>,
+  'forceResetAdmin' : ActorMethod<[], boolean>,
   'getActivity' : ActorMethod<[bigint], Activity>,
+  'getAdminPrincipal' : ActorMethod<[], [] | [Principal]>,
   'getAllActivities' : ActorMethod<[], Array<Activity>>,
   'getAllArticles' : ActorMethod<[], Array<Article>>,
   'getAllGaleriItems' : ActorMethod<[], Array<GaleriItem>>,
   'getAllPendaftaran' : ActorMethod<[], Array<PendaftaranAnggota>>,
   'getAllSatuanSSK' : ActorMethod<[], Array<SatuanSSK>>,
+  'getAllSliderBanners' : ActorMethod<[], Array<SliderBanner>>,
   'getAllTeamMembers' : ActorMethod<[], Array<TeamMember>>,
   'getAllVideos' : ActorMethod<[], Array<VideoYoutube>>,
   'getArticle' : ActorMethod<[bigint], Article>,
@@ -144,6 +152,9 @@ export interface _SERVICE {
   'getProgramUnggulan' : ActorMethod<[], ProgramUnggulan>,
   'getSiteSettings' : ActorMethod<[], SiteSettings>,
   'getTeamMember' : ActorMethod<[bigint], TeamMember>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'registerAdmin' : ActorMethod<[], boolean>,
+  'resetAdmin' : ActorMethod<[], boolean>,
   'updateActivity' : ActorMethod<
     [bigint, string, string, Time, string],
     Activity
@@ -174,20 +185,15 @@ export interface _SERVICE {
     SatuanSSK
   >,
   'updateSiteSettings' : ActorMethod<[string], SiteSettings>,
+  'updateSliderBanner' : ActorMethod<
+    [bigint, string, string, string, string, bigint],
+    SliderBanner
+  >,
   'updateTeamMember' : ActorMethod<
     [bigint, string, string, string, string],
     TeamMember
   >,
   'updateVideo' : ActorMethod<[bigint, string, string, string], VideoYoutube>,
-  'createSliderBanner' : ActorMethod<[string, string, string, string, bigint], SliderBanner>,
-  'deleteSliderBanner' : ActorMethod<[bigint], undefined>,
-  'getAllSliderBanners' : ActorMethod<[], Array<SliderBanner>>,
-  'updateSliderBanner' : ActorMethod<[bigint, string, string, string, string, bigint], SliderBanner>,
-  'registerAdmin' : ActorMethod<[], boolean>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'getAdminPrincipal' : ActorMethod<[], [Principal] | []>,
-  'isAdmin' : ActorMethod<[], boolean>,
-  'resetAdmin' : ActorMethod<[], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

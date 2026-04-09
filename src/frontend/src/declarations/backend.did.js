@@ -55,6 +55,14 @@ export const SatuanSSK = IDL.Record({
   'phone' : IDL.Text,
   'ketua' : IDL.Text,
 });
+export const SliderBanner = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'linkUrl' : IDL.Text,
+  'description' : IDL.Text,
+  'imageUrl' : IDL.Text,
+  'urutan' : IDL.Nat,
+});
 export const TeamMember = IDL.Record({
   'id' : IDL.Nat,
   'bio' : IDL.Text,
@@ -90,15 +98,6 @@ export const ProgramUnggulan = IDL.Record({
   'pesertaTerlatih' : IDL.Text,
 });
 export const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
-export const SliderBanner = IDL.Record({
-  'id' : IDL.Nat,
-  'title' : IDL.Text,
-  'description' : IDL.Text,
-  'imageUrl' : IDL.Text,
-  'linkUrl' : IDL.Text,
-  'urutan' : IDL.Nat,
-});
-
 
 export const idlService = IDL.Service({
   'createActivity' : IDL.Func(
@@ -138,20 +137,22 @@ export const idlService = IDL.Service({
     ),
   'createVideo' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [VideoYoutube], []),
   'deleteActivity' : IDL.Func([IDL.Nat], [], []),
-  'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
   'deleteArticle' : IDL.Func([IDL.Nat], [], []),
   'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
   'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
   'deleteSatuanSSK' : IDL.Func([IDL.Nat], [], []),
+  'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
   'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
   'deleteVideo' : IDL.Func([IDL.Nat], [], []),
+  'forceResetAdmin' : IDL.Func([], [IDL.Bool], []),
   'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
+  'getAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
   'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
-  'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
   'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
   'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
   'getAllPendaftaran' : IDL.Func([], [IDL.Vec(PendaftaranAnggota)], ['query']),
   'getAllSatuanSSK' : IDL.Func([], [IDL.Vec(SatuanSSK)], ['query']),
+  'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
   'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
   'getAllVideos' : IDL.Func([], [IDL.Vec(VideoYoutube)], ['query']),
   'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
@@ -160,6 +161,9 @@ export const idlService = IDL.Service({
   'getProgramUnggulan' : IDL.Func([], [ProgramUnggulan], ['query']),
   'getSiteSettings' : IDL.Func([], [SiteSettings], ['query']),
   'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'registerAdmin' : IDL.Func([], [IDL.Bool], []),
+  'resetAdmin' : IDL.Func([], [IDL.Bool], []),
   'updateActivity' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
       [Activity],
@@ -209,17 +213,12 @@ export const idlService = IDL.Service({
       [SatuanSSK],
       [],
     ),
+  'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
   'updateSliderBanner' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
       [SliderBanner],
       [],
     ),
-  'registerAdmin' : IDL.Func([], [IDL.Bool], []),
-  'getAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'resetAdmin' : IDL.Func([], [IDL.Bool], []),
-  'forceResetAdmin' : IDL.Func([], [IDL.Bool], []),
-    'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
   'updateTeamMember' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [TeamMember],
@@ -282,6 +281,14 @@ export const idlFactory = ({ IDL }) => {
     'phone' : IDL.Text,
     'ketua' : IDL.Text,
   });
+  const SliderBanner = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'linkUrl' : IDL.Text,
+    'description' : IDL.Text,
+    'imageUrl' : IDL.Text,
+    'urutan' : IDL.Nat,
+  });
   const TeamMember = IDL.Record({
     'id' : IDL.Nat,
     'bio' : IDL.Text,
@@ -317,14 +324,6 @@ export const idlFactory = ({ IDL }) => {
     'pesertaTerlatih' : IDL.Text,
   });
   const SiteSettings = IDL.Record({ 'logoUrl' : IDL.Text });
-  const SliderBanner = IDL.Record({
-    'id' : IDL.Nat,
-    'title' : IDL.Text,
-    'description' : IDL.Text,
-    'imageUrl' : IDL.Text,
-    'linkUrl' : IDL.Text,
-    'urutan' : IDL.Nat,
-  });
   
   return IDL.Service({
     'createActivity' : IDL.Func(
@@ -368,16 +367,17 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteActivity' : IDL.Func([IDL.Nat], [], []),
-  'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
     'deleteArticle' : IDL.Func([IDL.Nat], [], []),
     'deleteGaleriItem' : IDL.Func([IDL.Nat], [], []),
     'deletePendaftaran' : IDL.Func([IDL.Nat], [], []),
     'deleteSatuanSSK' : IDL.Func([IDL.Nat], [], []),
+    'deleteSliderBanner' : IDL.Func([IDL.Nat], [], []),
     'deleteTeamMember' : IDL.Func([IDL.Nat], [], []),
     'deleteVideo' : IDL.Func([IDL.Nat], [], []),
+    'forceResetAdmin' : IDL.Func([], [IDL.Bool], []),
     'getActivity' : IDL.Func([IDL.Nat], [Activity], ['query']),
+    'getAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
     'getAllActivities' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
-  'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
     'getAllArticles' : IDL.Func([], [IDL.Vec(Article)], ['query']),
     'getAllGaleriItems' : IDL.Func([], [IDL.Vec(GaleriItem)], ['query']),
     'getAllPendaftaran' : IDL.Func(
@@ -386,6 +386,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getAllSatuanSSK' : IDL.Func([], [IDL.Vec(SatuanSSK)], ['query']),
+    'getAllSliderBanners' : IDL.Func([], [IDL.Vec(SliderBanner)], ['query']),
     'getAllTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
     'getAllVideos' : IDL.Func([], [IDL.Vec(VideoYoutube)], ['query']),
     'getArticle' : IDL.Func([IDL.Nat], [Article], ['query']),
@@ -394,6 +395,9 @@ export const idlFactory = ({ IDL }) => {
     'getProgramUnggulan' : IDL.Func([], [ProgramUnggulan], ['query']),
     'getSiteSettings' : IDL.Func([], [SiteSettings], ['query']),
     'getTeamMember' : IDL.Func([IDL.Nat], [TeamMember], ['query']),
+    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'registerAdmin' : IDL.Func([], [IDL.Bool], []),
+    'resetAdmin' : IDL.Func([], [IDL.Bool], []),
     'updateActivity' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, Time, IDL.Text],
         [Activity],
@@ -443,12 +447,12 @@ export const idlFactory = ({ IDL }) => {
         [SatuanSSK],
         [],
       ),
+    'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
     'updateSliderBanner' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
-      [SliderBanner],
-      [],
-    ),
-  'updateSiteSettings' : IDL.Func([IDL.Text], [SiteSettings], []),
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
+        [SliderBanner],
+        [],
+      ),
     'updateTeamMember' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [TeamMember],

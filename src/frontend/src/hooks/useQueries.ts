@@ -9,10 +9,46 @@ import type {
   ProgramUnggulan,
   SatuanSSK,
   SiteSettings,
+  SliderBanner,
   TeamMember,
   VideoYoutube,
-} from "../backend.d";
+} from "../types/backend";
 import { useActor } from "./useActor";
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isCallerAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 0,
+  });
+}
+
+export function useAdminPrincipal() {
+  const { actor, isFetching } = useActor();
+  return useQuery<string>({
+    queryKey: ["adminPrincipal"],
+    queryFn: async () => {
+      if (!actor) return "";
+      try {
+        const result = await actor.getAdminPrincipal();
+        // result is [Principal] | [] — Candid option
+        if (Array.isArray(result) && result.length > 0 && result[0] != null) {
+          return result[0].toString();
+        }
+        return "";
+      } catch {
+        return "";
+      }
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 0,
+  });
+}
 
 export function useAllArticles() {
   const { actor, isFetching } = useActor();
@@ -92,7 +128,7 @@ export function useAllVideos() {
     queryKey: ["videos"],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as any).getAllVideos();
+      return actor.getAllVideos();
     },
     enabled: !!actor && !isFetching,
   });
@@ -104,7 +140,7 @@ export function useProfile() {
     queryKey: ["profile"],
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
-      return (actor as any).getProfile();
+      return actor.getProfile();
     },
     enabled: !!actor && !isFetching,
   });
@@ -160,7 +196,7 @@ export function useSiteSettings() {
 
 export function useAllSliderBanners() {
   const { actor, isFetching } = useActor();
-  return useQuery<import("../backend.d").SliderBanner[]>({
+  return useQuery<SliderBanner[]>({
     queryKey: ["sliderBanners"],
     queryFn: async () => {
       if (!actor) return [];

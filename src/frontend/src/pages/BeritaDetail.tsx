@@ -1,8 +1,8 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Calendar, Tag } from "lucide-react";
 import { motion } from "motion/react";
-import type { Article } from "../backend.d";
 import { useAllArticles } from "../hooks/useQueries";
+import type { Article } from "../types/backend";
 
 function formatDate(time: bigint) {
   const ms = Number(time) / 1_000_000;

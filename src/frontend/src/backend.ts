@@ -89,16 +89,17 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface SiteSettings {
-    logoUrl: string;
-}
-export type Time = bigint;
-export interface Activity {
+export interface SliderBanner {
     id: bigint;
     title: string;
-    date: Time;
+    linkUrl: string;
     description: string;
-    location: string;
+    imageUrl: string;
+    urutan: bigint;
+}
+export type Time = bigint;
+export interface SiteSettings {
+    logoUrl: string;
 }
 export interface GaleriItem {
     id: bigint;
@@ -121,6 +122,13 @@ export interface ProgramUnggulan {
     penghargaan: string;
     programKegiatan: string;
     pesertaTerlatih: string;
+}
+export interface Activity {
+    id: bigint;
+    title: string;
+    date: Time;
+    description: string;
+    location: string;
 }
 export interface TeamMember {
     id: bigint;
@@ -173,14 +181,6 @@ export interface Article {
     excerpt: string;
     category: string;
 }
-export interface SliderBanner {
-    id: bigint;
-    title: string;
-    description: string;
-    imageUrl: string;
-    linkUrl: string;
-    urutan: bigint;
-}
 export interface backendInterface {
     createActivity(title: string, description: string, date: Time, location: string): Promise<Activity>;
     createArticle(title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
@@ -188,9 +188,6 @@ export interface backendInterface {
     createPendaftaran(nama: string, nik: string, alamat: string, phone: string, email: string, pekerjaan: string, alasan: string): Promise<PendaftaranAnggota>;
     createSatuanSSK(nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
     createSliderBanner(title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
-    deleteSliderBanner(id: bigint): Promise<void>;
-    getAllSliderBanners(): Promise<Array<SliderBanner>>;
-    updateSliderBanner(id: bigint, title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
     createTeamMember(name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     createVideo(title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
     deleteActivity(id: bigint): Promise<void>;
@@ -198,14 +195,18 @@ export interface backendInterface {
     deleteGaleriItem(id: bigint): Promise<void>;
     deletePendaftaran(id: bigint): Promise<void>;
     deleteSatuanSSK(id: bigint): Promise<void>;
+    deleteSliderBanner(id: bigint): Promise<void>;
     deleteTeamMember(id: bigint): Promise<void>;
     deleteVideo(id: bigint): Promise<void>;
+    forceResetAdmin(): Promise<boolean>;
     getActivity(id: bigint): Promise<Activity>;
+    getAdminPrincipal(): Promise<Principal | null>;
     getAllActivities(): Promise<Array<Activity>>;
     getAllArticles(): Promise<Array<Article>>;
     getAllGaleriItems(): Promise<Array<GaleriItem>>;
     getAllPendaftaran(): Promise<Array<PendaftaranAnggota>>;
     getAllSatuanSSK(): Promise<Array<SatuanSSK>>;
+    getAllSliderBanners(): Promise<Array<SliderBanner>>;
     getAllTeamMembers(): Promise<Array<TeamMember>>;
     getAllVideos(): Promise<Array<VideoYoutube>>;
     getArticle(id: bigint): Promise<Article>;
@@ -214,6 +215,9 @@ export interface backendInterface {
     getProgramUnggulan(): Promise<ProgramUnggulan>;
     getSiteSettings(): Promise<SiteSettings>;
     getTeamMember(id: bigint): Promise<TeamMember>;
+    isCallerAdmin(): Promise<boolean>;
+    registerAdmin(): Promise<boolean>;
+    resetAdmin(): Promise<boolean>;
     updateActivity(id: bigint, title: string, description: string, date: Time, location: string): Promise<Activity>;
     updateArticle(id: bigint, title: string, excerpt: string, content: string, category: string, imageUrl: string): Promise<Article>;
     updateContactInfo(address: string, phone: string, email: string, operationalHours: string): Promise<ContactInfo>;
@@ -223,13 +227,9 @@ export interface backendInterface {
     updateProgramUnggulan(judul: string, deskripsi: string, pesertaTerlatih: string, programKegiatan: string, penghargaan: string, kecamatanTerlayani: string): Promise<ProgramUnggulan>;
     updateSatuanSSK(id: bigint, nama: string, alamat: string, phone: string, email: string, deskripsi: string, logoUrl: string, ketua: string): Promise<SatuanSSK>;
     updateSiteSettings(logoUrl: string): Promise<SiteSettings>;
+    updateSliderBanner(id: bigint, title: string, description: string, imageUrl: string, linkUrl: string, urutan: bigint): Promise<SliderBanner>;
     updateTeamMember(id: bigint, name: string, role: string, bio: string, imageUrl: string): Promise<TeamMember>;
     updateVideo(id: bigint, title: string, youtubeId: string, description: string): Promise<VideoYoutube>;
-    registerAdmin(): Promise<boolean>;
-    isCallerAdmin(): Promise<boolean>;
-    getAdminPrincipal(): Promise<[Principal] | []>;
-    resetAdmin(): Promise<boolean>;
-    forceResetAdmin(): Promise<boolean>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -306,56 +306,14 @@ export class Backend implements backendInterface {
     async createSliderBanner(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint): Promise<SliderBanner> {
         if (this.processError) {
             try {
-                const result = await (this.actor as any).createSliderBanner(arg0, arg1, arg2, arg3, arg4);
+                const result = await this.actor.createSliderBanner(arg0, arg1, arg2, arg3, arg4);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await (this.actor as any).createSliderBanner(arg0, arg1, arg2, arg3, arg4);
-            return result;
-        }
-    }
-    async deleteSliderBanner(arg0: bigint): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await (this.actor as any).deleteSliderBanner(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await (this.actor as any).deleteSliderBanner(arg0);
-            return result;
-        }
-    }
-    async getAllSliderBanners(): Promise<Array<SliderBanner>> {
-        if (this.processError) {
-            try {
-                const result = await (this.actor as any).getAllSliderBanners();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await (this.actor as any).getAllSliderBanners();
-            return result;
-        }
-    }
-    async updateSliderBanner(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: bigint): Promise<SliderBanner> {
-        if (this.processError) {
-            try {
-                const result = await (this.actor as any).updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await (this.actor as any).updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
+            const result = await this.actor.createSliderBanner(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }
@@ -457,6 +415,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteSliderBanner(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteSliderBanner(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteSliderBanner(arg0);
+            return result;
+        }
+    }
     async deleteTeamMember(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
@@ -485,6 +457,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async forceResetAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.forceResetAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.forceResetAdmin();
+            return result;
+        }
+    }
     async getActivity(arg0: bigint): Promise<Activity> {
         if (this.processError) {
             try {
@@ -497,6 +483,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getActivity(arg0);
             return result;
+        }
+    }
+    async getAdminPrincipal(): Promise<Principal | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdminPrincipal();
+                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdminPrincipal();
+            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllActivities(): Promise<Array<Activity>> {
@@ -566,6 +566,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllSatuanSSK();
+            return result;
+        }
+    }
+    async getAllSliderBanners(): Promise<Array<SliderBanner>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllSliderBanners();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllSliderBanners();
             return result;
         }
     }
@@ -678,6 +692,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getTeamMember(arg0);
+            return result;
+        }
+    }
+    async isCallerAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isCallerAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async registerAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerAdmin();
+            return result;
+        }
+    }
+    async resetAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.resetAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.resetAdmin();
             return result;
         }
     }
@@ -807,6 +863,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateSliderBanner(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: bigint): Promise<SliderBanner> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateSliderBanner(arg0, arg1, arg2, arg3, arg4, arg5);
+            return result;
+        }
+    }
     async updateTeamMember(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string): Promise<TeamMember> {
         if (this.processError) {
             try {
@@ -835,66 +905,9 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async registerAdmin(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                return await this.actor.registerAdmin();
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            return await this.actor.registerAdmin();
-        }
-    }
-    async isCallerAdmin(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                return await this.actor.isCallerAdmin();
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            return await this.actor.isCallerAdmin();
-        }
-    }
-    async getAdminPrincipal(): Promise<[Principal] | []> {
-        if (this.processError) {
-            try {
-                return await this.actor.getAdminPrincipal();
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            return await this.actor.getAdminPrincipal();
-        }
-    }
-    async resetAdmin(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                return await this.actor.resetAdmin();
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            return await this.actor.resetAdmin();
-        }
-    }
-    async forceResetAdmin(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                return await this.actor.forceResetAdmin();
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            return await this.actor.forceResetAdmin();
-        }
-    }
+}
+function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+    return value.length === 0 ? null : value[0];
 }
 export interface CreateActorOptions {
     agent?: Agent;

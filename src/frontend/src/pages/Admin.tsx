@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import type {
   Activity,
   Article,
@@ -44,9 +46,7 @@ import type {
   SliderBanner,
   TeamMember,
   VideoYoutube,
-} from "../backend.d";
-import { useActor } from "../hooks/useActor";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
+} from "../types/backend";
 
 async function compressImageToBase64(
   file: File,
@@ -84,6 +84,7 @@ async function compressImageToBase64(
 }
 
 import {
+  useAdminPrincipal,
   useAllActivities,
   useAllArticles,
   useAllGaleriItems,
@@ -92,6 +93,7 @@ import {
   useAllSliderBanners,
   useAllVideos,
   useContactInfo,
+  useIsCallerAdmin,
   useProfile,
   useProgramUnggulan,
   useSiteSettings,
@@ -222,10 +224,12 @@ const formatDate = (ts: bigint) => {
   }
 };
 
+import type { BackendActor } from "../types/backend";
+
 function ResetAdminInline({
   actor,
   onReset,
-}: { actor: any; onReset: () => void }) {
+}: { actor: BackendActor | null; onReset: () => void }) {
   const [loading, setLoading] = useState(false);
   const [confirm, setConfirm] = useState(false);
 
@@ -284,6 +288,57 @@ export default function Admin() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+
+  // caffeineAdminToken URL bypass
+  const urlParams = new URLSearchParams(window.location.search);
+  const adminToken = urlParams.get("caffeineAdminToken");
+  const hasTokenBypass = !!adminToken && adminToken.trim().length > 0;
+
+  // Admin role state
+  const [isRegistering, setIsRegistering] = useState(false);
+  const {
+    data: isCallerAdmin,
+    isLoading: adminCheckLoading,
+    refetch: refetchAdmin,
+  } = useIsCallerAdmin();
+  const { data: adminPrincipal, refetch: refetchAdminPrincipal } =
+    useAdminPrincipal();
+
+  // Determine effective admin access
+  const isAdminVerified = hasTokenBypass || isCallerAdmin === true;
+  const noAdminRegistered =
+    !adminPrincipal || adminPrincipal === "" || adminPrincipal === "2vxsx-fae";
+
+  const handleRegisterAdmin = async () => {
+    if (!actor) return;
+    setIsRegistering(true);
+    try {
+      await actor.registerAdmin();
+      toast.success("Berhasil didaftarkan sebagai admin!");
+      await refetchAdmin();
+      await refetchAdminPrincipal();
+    } catch {
+      toast.error("Gagal mendaftar sebagai admin. Coba lagi.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleTakeOverAdmin = async () => {
+    if (!actor) return;
+    setIsRegistering(true);
+    try {
+      await actor.resetAdmin();
+      await actor.registerAdmin();
+      toast.success("Berhasil mengambil alih sebagai admin!");
+      await refetchAdmin();
+      await refetchAdminPrincipal();
+    } catch {
+      toast.error("Gagal mengambil alih admin.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   // ---- Articles state ----
   const { data: articles = [], isLoading: articlesLoading } = useAllArticles();
@@ -845,11 +900,7 @@ export default function Admin() {
   const createVideoMutation = useMutation({
     mutationFn: async (data: VideoForm) => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).createVideo(
-        data.title,
-        data.youtubeId,
-        data.description,
-      );
+      return actor.createVideo(data.title, data.youtubeId, data.description);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["videos"] });
@@ -863,7 +914,7 @@ export default function Admin() {
   const updateVideoMutation = useMutation({
     mutationFn: async (data: VideoForm) => {
       if (!actor || !editingVideo) throw new Error("Actor not ready");
-      return (actor as any).updateVideo(
+      return actor.updateVideo(
         editingVideo.id,
         data.title,
         data.youtubeId,
@@ -883,7 +934,7 @@ export default function Admin() {
   const deleteVideoMutation = useMutation({
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).deleteVideo(id);
+      return actor.deleteVideo(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["videos"] });
@@ -897,7 +948,7 @@ export default function Admin() {
   const updateProfileMutation = useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Actor not ready");
-      return (actor as any).updateProfile(
+      return actor.updateProfile(
         profileForm.namaOrganisasi,
         profileForm.tagline,
         profileForm.deskripsi,
@@ -928,10 +979,12 @@ export default function Admin() {
                 <p className="text-sm text-gray-300">SSK Kabupaten Subang</p>
               </div>
             </div>
-            {isAuthenticated && (
+            {(isAuthenticated || hasTokenBypass) && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-400 hidden sm:block">
-                  {identity?.getPrincipal().toString().slice(0, 20)}…
+                  {hasTokenBypass
+                    ? "Token Bypass"
+                    : `${identity?.getPrincipal().toString().slice(0, 20)}…`}
                 </span>
                 <Button
                   variant="outline"
@@ -957,7 +1010,7 @@ export default function Admin() {
           >
             <Loader2 className="w-8 h-8 animate-spin text-navy" />
           </div>
-        ) : !isAuthenticated ? (
+        ) : !isAuthenticated && !hasTokenBypass ? (
           <div className="flex items-center justify-center py-24">
             <Card className="w-full max-w-sm shadow-lg border-0">
               <CardHeader className="text-center pb-2">
@@ -987,6 +1040,85 @@ export default function Admin() {
                       Identity
                     </>
                   )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : isAuthenticated && !hasTokenBypass && adminCheckLoading ? (
+          <div
+            className="flex flex-col items-center justify-center py-32 gap-4"
+            data-ocid="admin.admin_check_loading"
+          >
+            <Loader2 className="w-8 h-8 animate-spin text-navy" />
+            <p className="text-sm text-gray-500">Memeriksa hak akses admin…</p>
+          </div>
+        ) : isAuthenticated && !hasTokenBypass && !isAdminVerified ? (
+          <div className="flex items-center justify-center py-24">
+            <Card
+              className="w-full max-w-sm shadow-lg border-0"
+              data-ocid="admin.access_denied_card"
+            >
+              <CardHeader className="text-center pb-2">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-red-500" />
+                </div>
+                <CardTitle className="text-red-600 text-xl">
+                  {noAdminRegistered ? "Daftarkan Admin" : "Akses Ditolak"}
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  {noAdminRegistered
+                    ? "Belum ada admin yang terdaftar. Daftarkan akun ini sebagai admin pertama."
+                    : "Akun ini tidak memiliki hak akses admin. Hanya akun admin yang terdaftar yang dapat mengakses panel ini."}
+                </p>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                {noAdminRegistered ? (
+                  <Button
+                    className="w-full bg-navy hover:bg-navy/90 text-white font-semibold"
+                    onClick={handleRegisterAdmin}
+                    disabled={isRegistering || !actor}
+                    data-ocid="admin.register_admin_button"
+                  >
+                    {isRegistering ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Mendaftarkan…
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Daftarkan sebagai Admin
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                    onClick={handleTakeOverAdmin}
+                    disabled={isRegistering || !actor}
+                    data-ocid="admin.takeover_admin_button"
+                  >
+                    {isRegistering ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Memproses…
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Ambil Alih sebagai Admin
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="w-full border-navy/30 text-navy hover:bg-navy/10"
+                  onClick={clear}
+                  data-ocid="admin.access_denied_logout_button"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Keluar
                 </Button>
               </CardContent>
             </Card>
@@ -2636,10 +2768,32 @@ export default function Admin() {
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                         <span className="text-sm font-medium text-gray-600 w-32">
-                          Principal ID
+                          Principal Admin
                         </span>
                         <span className="text-sm font-mono text-gray-800 break-all">
-                          {identity?.getPrincipal().toString()}
+                          {adminPrincipal &&
+                          adminPrincipal !== "" &&
+                          adminPrincipal !== "2vxsx-fae" ? (
+                            adminPrincipal
+                          ) : (
+                            <span className="text-gray-400 italic">
+                              Belum ada admin terdaftar
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <span className="text-sm font-medium text-gray-600 w-32">
+                          Login Anda
+                        </span>
+                        <span className="text-sm font-mono text-gray-800 break-all">
+                          {hasTokenBypass ? (
+                            <span className="text-orange-600 font-semibold">
+                              Token Bypass Aktif
+                            </span>
+                          ) : (
+                            identity?.getPrincipal().toString()
+                          )}
                         </span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
@@ -2647,7 +2801,7 @@ export default function Admin() {
                           Tipe Akses
                         </span>
                         <span className="text-sm text-gray-800">
-                          Internet Identity
+                          {hasTokenBypass ? "Token URL" : "Internet Identity"}
                         </span>
                       </div>
                     </div>
@@ -2689,30 +2843,36 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                {/* Zona Berbahaya */}
-                <Card className="border-0 shadow-sm border-red-100">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-red-600 text-base">
-                      Zona Berbahaya
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-red-700 mb-1">
-                        Reset Admin
-                      </h4>
-                      <p className="text-xs text-red-600 mb-3">
-                        Menghapus akun admin saat ini dari sistem. Setelah
-                        di-reset, siapa pun yang login pertama kali dapat
-                        mendaftar sebagai admin baru.
-                      </p>
-                      <ResetAdminInline
-                        actor={actor}
-                        onReset={() => queryClient.invalidateQueries()}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Zona Berbahaya — show for verified admin or token bypass */}
+                {(isCallerAdmin === true || hasTokenBypass) && (
+                  <Card className="border-0 shadow-sm border-red-100">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-red-600 text-base">
+                        Zona Berbahaya
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-red-700 mb-1">
+                          Reset Admin
+                        </h4>
+                        <p className="text-xs text-red-600 mb-3">
+                          Menghapus akun admin saat ini dari sistem. Setelah
+                          di-reset, siapa pun yang login pertama kali dapat
+                          mendaftar sebagai admin baru.
+                        </p>
+                        <ResetAdminInline
+                          actor={actor}
+                          onReset={() => {
+                            queryClient.invalidateQueries();
+                            refetchAdmin();
+                            refetchAdminPrincipal();
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </>

@@ -1,0 +1,170 @@
+type VideoYoutube = 
+ record {
+   description: text;
+   id: nat;
+   title: text;
+   youtubeId: text;
+ };
+type Time = int;
+type TeamMember = 
+ record {
+   bio: text;
+   id: nat;
+   imageUrl: text;
+   name: text;
+   role: text;
+ };
+type SliderBanner = 
+ record {
+   description: text;
+   id: nat;
+   imageUrl: text;
+   linkUrl: text;
+   title: text;
+   urutan: nat;
+ };
+type SiteSettings = record {logoUrl: text;};
+type SatuanSSK = 
+ record {
+   alamat: text;
+   deskripsi: text;
+   email: text;
+   id: nat;
+   ketua: text;
+   logoUrl: text;
+   nama: text;
+   phone: text;
+ };
+type ProgramUnggulan = 
+ record {
+   deskripsi: text;
+   judul: text;
+   kecamatanTerlayani: text;
+   penghargaan: text;
+   pesertaTerlatih: text;
+   programKegiatan: text;
+ };
+type Profile = 
+ record {
+   deskripsi: text;
+   misi: text;
+   namaOrganisasi: text;
+   tagline: text;
+   visi: text;
+ };
+type PendaftaranAnggota = 
+ record {
+   alamat: text;
+   alasan: text;
+   email: text;
+   id: nat;
+   nama: text;
+   nik: text;
+   pekerjaan: text;
+   phone: text;
+   status: text;
+   tanggalDaftar: Time;
+ };
+type GaleriItem = 
+ record {
+   description: text;
+   id: nat;
+   mediaType: text;
+   mediaUrl: text;
+   tanggal: Time;
+   title: text;
+ };
+type ContactInfo = 
+ record {
+   address: text;
+   email: text;
+   operationalHours: text;
+   phone: text;
+ };
+type Article = 
+ record {
+   category: text;
+   content: text;
+   date: Time;
+   excerpt: text;
+   id: nat;
+   imageUrl: text;
+   title: text;
+ };
+type Activity = 
+ record {
+   date: Time;
+   description: text;
+   id: nat;
+   location: text;
+   title: text;
+ };
+service : {
+  createActivity: (title: text, description: text, date: Time, location:
+   text) -> (Activity);
+  createArticle: (title: text, excerpt: text, content: text, category: 
+   text, imageUrl: text) -> (Article);
+  createGaleriItem: (title: text, description: text, mediaUrl: text,
+   mediaType: text) -> (GaleriItem);
+  createPendaftaran: (nama: text, nik: text, alamat: text, phone: text,
+   email: text, pekerjaan: text, alasan: text) -> (PendaftaranAnggota);
+  createSatuanSSK: (nama: text, alamat: text, phone: text, email: text,
+   deskripsi: text, logoUrl: text, ketua: text) -> (SatuanSSK);
+  createSliderBanner: (title: text, description: text, imageUrl: text,
+   linkUrl: text, urutan: nat) -> (SliderBanner);
+  createTeamMember: (name: text, role: text, bio: text, imageUrl: text) ->
+   (TeamMember);
+  createVideo: (title: text, youtubeId: text, description: text) ->
+   (VideoYoutube);
+  deleteActivity: (id: nat) -> ();
+  deleteArticle: (id: nat) -> ();
+  deleteGaleriItem: (id: nat) -> ();
+  deletePendaftaran: (id: nat) -> ();
+  deleteSatuanSSK: (id: nat) -> ();
+  deleteSliderBanner: (id: nat) -> ();
+  deleteTeamMember: (id: nat) -> ();
+  deleteVideo: (id: nat) -> ();
+  forceResetAdmin: () -> (bool);
+  getActivity: (id: nat) -> (Activity) query;
+  getAdminPrincipal: () -> (opt principal) query;
+  getAllActivities: () -> (vec Activity) query;
+  getAllArticles: () -> (vec Article) query;
+  getAllGaleriItems: () -> (vec GaleriItem) query;
+  getAllPendaftaran: () -> (vec PendaftaranAnggota) query;
+  getAllSatuanSSK: () -> (vec SatuanSSK) query;
+  getAllSliderBanners: () -> (vec SliderBanner) query;
+  getAllTeamMembers: () -> (vec TeamMember) query;
+  getAllVideos: () -> (vec VideoYoutube) query;
+  getArticle: (id: nat) -> (Article) query;
+  getContactInfo: () -> (ContactInfo) query;
+  getProfile: () -> (Profile) query;
+  getProgramUnggulan: () -> (ProgramUnggulan) query;
+  getSiteSettings: () -> (SiteSettings) query;
+  getTeamMember: (id: nat) -> (TeamMember) query;
+  isCallerAdmin: () -> (bool) query;
+  registerAdmin: () -> (bool);
+  resetAdmin: () -> (bool);
+  updateActivity: (id: nat, title: text, description: text, date: Time,
+   location: text) -> (Activity);
+  updateArticle: (id: nat, title: text, excerpt: text, content: text,
+   category: text, imageUrl: text) -> (Article);
+  updateContactInfo: (address: text, phone: text, email: text,
+   operationalHours: text) -> (ContactInfo);
+  updateGaleriItem: (id: nat, title: text, description: text, mediaUrl: 
+   text, mediaType: text) -> (GaleriItem);
+  updatePendaftaranStatus: (id: nat, status: text) -> (PendaftaranAnggota);
+  updateProfile: (namaOrganisasi: text, tagline: text, deskripsi: text, visi:
+   text, misi: text) -> (Profile);
+  updateProgramUnggulan: (judul: text, deskripsi: text, pesertaTerlatih:
+   text, programKegiatan: text, penghargaan: text, kecamatanTerlayani:
+   text) -> (ProgramUnggulan);
+  updateSatuanSSK: (id: nat, nama: text, alamat: text, phone: text, email:
+   text, deskripsi: text, logoUrl: text, ketua: text) -> (SatuanSSK);
+  updateSiteSettings: (logoUrl: text) -> (SiteSettings);
+  updateSliderBanner: (id: nat, title: text, description: text, imageUrl:
+   text, linkUrl: text, urutan: nat) -> (SliderBanner);
+  updateTeamMember: (id: nat, name: text, role: text, bio: text, imageUrl:
+   text) -> (TeamMember);
+  updateVideo: (id: nat, title: text, youtubeId: text, description: text) ->
+   (VideoYoutube);
+}

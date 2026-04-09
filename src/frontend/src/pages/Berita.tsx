@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar, Tag } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import type { Article } from "../backend.d";
 import { useAllArticles } from "../hooks/useQueries";
+import type { Article } from "../types/backend";
 
 const categories = [
   "Semua",

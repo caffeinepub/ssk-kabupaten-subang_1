@@ -1,0 +1,187 @@
+// Version: 1.0.0
+type Activity__391177660 =
+  {
+    date : Time__900049286;
+    description : Text;
+    id : Nat;
+    location : Text;
+    title : Text
+  };
+type Article__693132840 =
+  {
+    category : Text;
+    content : Text;
+    date : Time__900049286;
+    excerpt : Text;
+    id : Nat;
+    imageUrl : Text;
+    title : Text
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type GaleriItem__864050543 =
+  {
+    description : Text;
+    id : Nat;
+    mediaType : Text;
+    mediaUrl : Text;
+    tanggal : Time__900049286;
+    title : Text
+  };
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type PendaftaranAnggota__684437080 =
+  {
+    alamat : Text;
+    alasan : Text;
+    email : Text;
+    id : Nat;
+    nama : Text;
+    nik : Text;
+    pekerjaan : Text;
+    phone : Text;
+    status : Text;
+    tanggalDaftar : Time__900049286
+  };
+type SatuanSSK__489875002 =
+  {
+    alamat : Text;
+    deskripsi : Text;
+    email : Text;
+    id : Nat;
+    ketua : Text;
+    logoUrl : Text;
+    nama : Text;
+    phone : Text
+  };
+type SliderBanner__624538740 =
+  {
+    description : Text;
+    id : Nat;
+    imageUrl : Text;
+    linkUrl : Text;
+    title : Text;
+    urutan : Nat
+  };
+type TeamMember__720132507 =
+  {bio : Text; id : Nat; imageUrl : Text; name : Text; role : Text};
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type VideoYoutube__382632734 =
+  {description : Text; id : Nat; title : Text; youtubeId : Text};
+actor {
+  stable activities :
+    {
+      var root : Node__46230540<Nat, Activity__391177660>;
+      var size : Nat__490723111
+    };
+  stable var adminPrincipal : ?Principal;
+  stable articles :
+    {
+      var root : Node__46230540<Nat, Article__693132840>;
+      var size : Nat__490723111
+    };
+  stable var contactInfo :
+    {address : Text; email : Text; operationalHours : Text; phone : Text};
+  stable galeriItems :
+    {
+      var root : Node__46230540<Nat, GaleriItem__864050543>;
+      var size : Nat__490723111
+    };
+  stable var nextActivityId : Nat;
+  stable var nextArticleId : Nat;
+  stable var nextGaleriItemId : Nat;
+  stable var nextPendaftaranId : Nat;
+  stable var nextSatuanId : Nat;
+  stable var nextSliderId : Nat;
+  stable var nextTeamMemberId : Nat;
+  stable var nextVideoId : Nat;
+  stable pendaftaranAnggota :
+    {
+      var root : Node__46230540<Nat, PendaftaranAnggota__684437080>;
+      var size : Nat__490723111
+    };
+  stable var profile :
+    {
+      deskripsi : Text;
+      misi : Text;
+      namaOrganisasi : Text;
+      tagline : Text;
+      visi : Text
+    };
+  stable var programUnggulan :
+    {
+      deskripsi : Text;
+      judul : Text;
+      kecamatanTerlayani : Text;
+      penghargaan : Text;
+      pesertaTerlatih : Text;
+      programKegiatan : Text
+    };
+  stable satuanSSK :
+    {
+      var root : Node__46230540<Nat, SatuanSSK__489875002>;
+      var size : Nat__490723111
+    };
+  stable var siteSettings : {logoUrl : Text};
+  stable sliderBanners :
+    {
+      var root : Node__46230540<Nat, SliderBanner__624538740>;
+      var size : Nat__490723111
+    };
+  stable var stableActivities : [(Nat, Activity__391177660)];
+  stable var stableAdminPrincipal : ?Principal;
+  stable var stableArticles : [(Nat, Article__693132840)];
+  stable var stableContactInfo :
+    {address : Text; email : Text; operationalHours : Text; phone : Text};
+  stable var stableGaleriItems : [(Nat, GaleriItem__864050543)];
+  stable var stableNextActivityId : Nat;
+  stable var stableNextArticleId : Nat;
+  stable var stableNextGaleriItemId : Nat;
+  stable var stableNextPendaftaranId : Nat;
+  stable var stableNextSatuanId : Nat;
+  stable var stableNextSliderId : Nat;
+  stable var stableNextTeamMemberId : Nat;
+  stable var stableNextVideoId : Nat;
+  stable var stablePendaftaranAnggota :
+    [(Nat, PendaftaranAnggota__684437080)];
+  stable var stableProfile :
+    {
+      deskripsi : Text;
+      misi : Text;
+      namaOrganisasi : Text;
+      tagline : Text;
+      visi : Text
+    };
+  stable var stableProgramUnggulan :
+    {
+      deskripsi : Text;
+      judul : Text;
+      kecamatanTerlayani : Text;
+      penghargaan : Text;
+      pesertaTerlatih : Text;
+      programKegiatan : Text
+    };
+  stable var stableSatuanSSK : [(Nat, SatuanSSK__489875002)];
+  stable var stableSiteSettings : {logoUrl : Text};
+  stable var stableSliderBanners : [(Nat, SliderBanner__624538740)];
+  stable var stableTeamMembers : [(Nat, TeamMember__720132507)];
+  stable var stableVideos : [(Nat, VideoYoutube__382632734)];
+  stable teamMembers :
+    {
+      var root : Node__46230540<Nat, TeamMember__720132507>;
+      var size : Nat__490723111
+    };
+  stable videos :
+    {
+      var root : Node__46230540<Nat, VideoYoutube__382632734>;
+      var size : Nat__490723111
+    }
+};

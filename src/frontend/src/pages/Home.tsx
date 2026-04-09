@@ -12,13 +12,13 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
-import type { Article } from "../backend.d";
 import {
   useAllArticles,
   useAllSliderBanners,
   useProgramUnggulan,
   useTeamMembers,
 } from "../hooks/useQueries";
+import type { Article } from "../types/backend";
 
 function formatDate(time: bigint) {
   const ms = Number(time) / 1_000_000;
